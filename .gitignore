@@ -1,0 +1,70 @@
+# Data files
+*.jsonl
+*.json
+*.csv
+*.xlsx
+*.parquet
+data/
+data_*
+*_data*
+sample_post.json
+
+# Model files (large binary files)
+bertopic_*_model/
+*.pkl
+*.joblib
+*.h5
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environment
+venv/
+env/
+.env
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Pipenv
+Pipfile.lock
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Temporary files
+tmp/
+temp/
+*.temp
