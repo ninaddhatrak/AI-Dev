@@ -68,3 +68,6 @@ logs/
 tmp/
 temp/
 *.temp
+
+# Postgres data volume (share via drive)
+postgres/pgdata/
