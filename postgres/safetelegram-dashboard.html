@@ -3,1324 +3,1515 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeTelegram Index — Investigative Dashboard</title>
+<title>SafeTelegram — Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0a0c0f;
-    --surface: #0f1318;
-    --surface2: #151b22;
-    --border: #1e2730;
-    --border2: #253040;
-    --text: #c8d6e5;
-    --muted: #4a5a6b;
-    --accent: #00d4aa;
-    --accent2: #0094ff;
-    --warn: #ff6b35;
-    --danger: #ff3355;
-    --yellow: #ffd166;
-    --grid-line: rgba(30,39,48,0.8);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 13px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Scanline overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
-  }
-
-  /* TOP BAR */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    height: 52px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-  }
-
-  .logo-icon {
-    width: 28px;
-    height: 28px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .topbar-meta {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: pulse 2s ease-in-out infinite;
-    display: inline-block;
-    margin-right: 6px;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  /* NAV TABS */
-  .nav {
-    display: flex;
-    gap: 0;
-    padding: 0 24px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .nav-tab {
-    padding: 12px 18px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.15s;
-    text-transform: uppercase;
-  }
-
-  .nav-tab:hover { color: var(--text); }
-
-  .nav-tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  /* LAYOUT */
-  .container {
-    padding: 20px 24px;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  .panel {
-    display: none;
-    animation: fadeIn 0.2s ease;
-  }
-  .panel.active { display: block; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* STAT CARDS */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .stat-card.accent::before { background: var(--accent); }
-  .stat-card.blue::before { background: var(--accent2); }
-  .stat-card.warn::before { background: var(--warn); }
-  .stat-card.danger::before { background: var(--danger); }
-  .stat-card.yellow::before { background: var(--yellow); }
-
-  .stat-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  .stat-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 26px;
-    font-weight: 600;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .stat-card.accent .stat-value { color: var(--accent); }
-  .stat-card.blue .stat-value { color: var(--accent2); }
-  .stat-card.warn .stat-value { color: var(--warn); }
-  .stat-card.danger .stat-value { color: var(--danger); }
-  .stat-card.yellow .stat-value { color: var(--yellow); }
-
-  .stat-sub {
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .stat-sub .up { color: var(--danger); }
-  .stat-sub .down { color: var(--accent); }
-
-  /* GRID LAYOUT */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .grid-3 {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .card-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text);
-  }
-
-  .card-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 2px 8px;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-  }
-
-  .card-body { padding: 16px; }
-
-  /* TABLE */
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .data-table th {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    text-align: left;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-
-  .data-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--grid-line);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    vertical-align: middle;
-  }
-
-  .data-table tr:hover td {
-    background: rgba(255,255,255,0.02);
-  }
-
-  .data-table tr:last-child td { border-bottom: none; }
-
-  .channel-name {
-    color: var(--accent2);
-    font-weight: 500;
-  }
-
-  .risk-badge {
-    font-size: 10px;
-    font-weight: 500;
-    padding: 2px 8px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    display: inline-block;
-  }
-
-  .risk-critical { background: rgba(255,51,85,0.15); color: var(--danger); border: 1px solid rgba(255,51,85,0.3); }
-  .risk-high { background: rgba(255,107,53,0.15); color: var(--warn); border: 1px solid rgba(255,107,53,0.3); }
-  .risk-medium { background: rgba(255,209,102,0.15); color: var(--yellow); border: 1px solid rgba(255,209,102,0.3); }
-  .risk-low { background: rgba(0,212,170,0.15); color: var(--accent); border: 1px solid rgba(0,212,170,0.3); }
-
-  .subs-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .bar-track {
-    flex: 1;
-    height: 3px;
-    background: var(--border2);
-    max-width: 80px;
-  }
-
-  .bar-fill {
-    height: 100%;
-    background: var(--accent2);
-  }
-
-  /* KEYWORD TABLE */
-  .keyword-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--grid-line);
-  }
-
-  .keyword-row:last-child { border-bottom: none; }
-
-  .keyword-tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text);
-    background: var(--surface2);
-    padding: 3px 8px;
-    border: 1px solid var(--border2);
-  }
-
-  .keyword-freq {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .freq-bar-track {
-    width: 60px;
-    height: 3px;
-    background: var(--border2);
-  }
-
-  .freq-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
-  }
-
-  /* TIMELINE */
-  .timeline-event {
-    display: flex;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--grid-line);
-  }
-  .timeline-event:last-child { border-bottom: none; }
-
-  .tl-date {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    white-space: nowrap;
-    width: 72px;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  .tl-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  .tl-content {
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  .tl-title { color: var(--text); font-weight: 400; margin-bottom: 2px; }
-  .tl-sub { color: var(--muted); font-size: 11px; }
-
-  /* NETWORK GRAPH */
-  #networkCanvas {
-    width: 100%;
-    height: 320px;
-  }
-
-  /* SEARCH BAR */
-  .search-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    align-items: center;
-  }
-
-  .search-input {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    padding: 8px 14px;
-    flex: 1;
-    outline: none;
-  }
-
-  .search-input:focus { border-color: var(--accent); }
-  .search-input::placeholder { color: var(--muted); }
-
-  .filter-chip {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 6px 12px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    letter-spacing: 0.05em;
-    transition: all 0.15s;
-    text-transform: uppercase;
-  }
-
-  .filter-chip:hover, .filter-chip.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,212,170,0.08);
-  }
-
-  /* CHART WRAPPERS */
-  .chart-wrap {
-    position: relative;
-    height: 200px;
-  }
-
-  /* SECTION LABEL */
-  .section-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ALERT STRIP */
-  .alert-strip {
-    background: rgba(255,51,85,0.08);
-    border: 1px solid rgba(255,51,85,0.25);
-    border-left: 3px solid var(--danger);
-    padding: 10px 16px;
-    margin-bottom: 16px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .alert-icon {
-    color: var(--danger);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  /* INSIGHT CARDS */
-  .insight-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .insight-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 14px;
-    border-left: 3px solid transparent;
-  }
-
-  .insight-card.type-growth { border-left-color: var(--danger); }
-  .insight-card.type-pattern { border-left-color: var(--accent2); }
-  .insight-card.type-keyword { border-left-color: var(--yellow); }
-
-  .insight-type {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-
-  .insight-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-    line-height: 1.3;
-  }
-
-  .insight-desc {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.5;
-  }
-
-  /* MINI FOOTER */
-  .footer-strip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 24px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    margin-top: 24px;
-  }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); }
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface2: #f5f5f7;
+  --border: rgba(0,0,0,.07);
+  --border2: rgba(0,0,0,.11);
+
+  --text: #1d1d1f;
+  --text2: #424245;
+  --muted: #6e6e73;
+  --faint: #aeaeb2;
+
+  --blue: #0071e3;
+  --blue-soft: rgba(0,113,227,.07);
+  --blue-mid: rgba(0,113,227,.14);
+
+  --red: #ff3b30;
+  --red-soft: rgba(255,59,48,.07);
+  --red-border: rgba(255,59,48,.18);
+
+  --orange: #ff9500;
+  --orange-soft: rgba(255,149,0,.07);
+  --orange-border: rgba(255,149,0,.2);
+
+  --yellow: #ffcc00;
+  --yellow-soft: rgba(255,204,0,.07);
+  --yellow-border: rgba(255,204,0,.22);
+
+  --green: #30d158;
+  --green-soft: rgba(48,209,88,.08);
+  --green-border: rgba(48,209,88,.22);
+
+  --sidebar-w: 232px;
+  --r: 12px;
+  --r-sm: 8px;
+  --r-xs: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SIDEBAR ──────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 200;
+}
+
+.sb-logo {
+  padding: 24px 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 2px;
+}
+.logo-mark {
+  width: 28px;
+  height: 28px;
+  background: var(--text);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.logo-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.02em;
+}
+.logo-sub {
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: .01em;
+  padding-left: 37px;
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(48,209,88,.4); }
+  50%      { opacity:.7; box-shadow: 0 0 0 4px rgba(48,209,88,0); }
+}
+.live-text { font-size: 11px; color: var(--muted); }
+
+.sb-nav {
+  padding: 12px 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--faint);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 8px 8px 4px;
+  margin-top: 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background .12s;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 450;
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+.ni { width: 15px; height: 15px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sb-foot {
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+}
+.sb-foot-text {
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.6;
+}
+
+/* ── MAIN ─────────────────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 52px;
+  background: rgba(250,250,250,.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.bc { display: flex; align-items: center; gap: 6px; }
+.bc-sep { color: var(--faint); font-size: 12px; }
+.bc-root { font-size: 13px; color: var(--muted); }
+.bc-cur { font-size: 13px; font-weight: 500; color: var(--text); }
+.tb-right { display: flex; align-items: center; gap: 10px; }
+.tb-meta { font-size: 11.5px; color: var(--faint); font-family: 'JetBrains Mono', monospace; }
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 6px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .14s;
+  letter-spacing: -.01em;
+}
+.btn-export:hover { opacity: .82; }
+
+.page {
+  padding: 24px 28px 48px;
+  flex: 1;
+}
+.panel { display: none; animation: fadeUp .2s ease; }
+.panel.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header { margin-bottom: 20px; }
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.03em;
+  margin-bottom: 3px;
+}
+.page-sub { font-size: 13px; color: var(--muted); }
+
+/* ── ALERT ────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--red-soft);
+  border: 1px solid var(--red-border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.alert-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  margin-top: 5px;
+  flex-shrink: 0;
+  animation: pulse-red 2s ease-in-out infinite;
+}
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,59,48,.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(255,59,48,0); }
+}
+.alert strong { font-size: 13px; font-weight: 600; color: var(--red); display: block; margin-bottom: 2px; }
+.alert p { font-size: 12.5px; color: var(--text2); line-height: 1.55; }
+
+/* ── STAT CARDS ───────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  transition: box-shadow .18s;
+}
+.stat-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,.06); }
+.stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -.03em;
+  color: var(--text);
+}
+.stat-value.red { color: var(--red); }
+.stat-value.orange { color: var(--orange); }
+.stat-value.green { color: var(--green); }
+.stat-trend { font-size: 11.5px; color: var(--muted); }
+.up { color: var(--red); font-weight: 500; }
+.dn { color: var(--green); font-weight: 500; }
+
+/* ── CARD ─────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+.card-tag {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all .14s;
+}
+.card-tag:hover { border-color: var(--blue); color: var(--blue); }
+.card-body { padding: 16px 18px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
+.ht  { position: relative; height: 190px; }
+.hlg { position: relative; height: 250px; }
+
+/* ── TIMELINE ─────────────────────────────────── */
+.timeline { display: flex; flex-direction: column; }
+.tl-row {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.tl-row:last-child { border-bottom: none; padding-bottom: 0; }
+.tl-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--faint);
+  width: 54px;
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+.tl-pip {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.tl-title { font-size: 12.5px; font-weight: 500; color: var(--text); margin-bottom: 1px; }
+.tl-sub { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+
+/* ── TABLE ────────────────────────────────────── */
+.table-wrap { overflow-x: auto; max-height: 480px; overflow-y: auto; }
+.dt { width: 100%; border-collapse: collapse; }
+.dt th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--faint);
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+.dt th:hover { color: var(--muted); }
+.dt td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.dt tr:last-child td { border-bottom: none; }
+.dt tr:hover td { background: var(--surface2); }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+.ch-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--blue); font-weight: 500; }
+
+/* ── RISK BADGES ──────────────────────────────── */
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: .03em;
+  display: inline-block;
+  white-space: nowrap;
+}
+.b-crit { background: var(--red-soft); color: var(--red); border-color: var(--red-border); }
+.b-high { background: var(--orange-soft); color: var(--orange); border-color: var(--orange-border); }
+.b-med  { background: var(--yellow-soft); color: #997a00; border-color: var(--yellow-border); }
+.b-low  { background: var(--green-soft); color: #1a7a34; border-color: var(--green-border); }
+.b-un   { background: var(--surface2); color: var(--faint); border-color: var(--border); }
+.status-active { font-size: 12px; color: var(--green); font-weight: 500; }
+.status-banned { font-size: 12px; color: var(--red); font-weight: 500; }
+
+/* ── SUBS BAR ─────────────────────────────────── */
+.sub-row { display: flex; align-items: center; gap: 8px; }
+.sub-bar { width: 52px; height: 2px; background: var(--border2); border-radius: 1px; overflow: hidden; flex-shrink: 0; }
+.sub-fill { height: 100%; background: var(--blue); border-radius: 1px; }
+
+/* ── SEARCH BAR ───────────────────────────────── */
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.search-input {
+  flex: 1;
+  min-width: 180px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  padding: 7px 12px;
+  outline: none;
+  transition: border-color .14s, box-shadow .14s;
+}
+.search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.1); background: var(--surface); }
+.search-input::placeholder { color: var(--faint); }
+.filter-btn {
+  font-size: 12px;
+  font-weight: 450;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .13s;
+  white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+.filter-btn.on { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.filter-btn.crit.on { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+.filter-btn.high.on { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
+.filter-btn.med.on { border-color: #997a00; color: #997a00; background: var(--yellow-soft); }
+
+/* ── KEYWORDS ─────────────────────────────────── */
+.kw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.kw-row:last-child { border-bottom: none; }
+.kw-term { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text); min-width: 100px; }
+.kw-freq { display: flex; align-items: center; gap: 9px; }
+.kw-bar-wrap { width: 80px; height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.kw-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+.kw-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+
+/* ── DRIFT ────────────────────────────────────── */
+.drift-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.drift-row:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.drift-tag { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 2px 8px; border-radius: var(--r-xs); }
+.dt-old { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-border); }
+.dt-mid { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange-border); }
+.dt-new { background: var(--green-soft); color: #1a7a34; border: 1px solid var(--green-border); }
+.dt-arrow { color: var(--faint); font-size: 11px; }
+.new-terms-block { margin-top: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; }
+.new-terms-label { font-size: 10px; font-weight: 500; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
+.new-terms-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; background: var(--yellow-soft); border: 1px solid var(--yellow-border); color: #997a00; padding: 2px 8px; border-radius: var(--r-xs); }
+
+/* ── CLUSTER ──────────────────────────────────── */
+.cluster-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  margin-bottom: 7px;
+  transition: border-color .14s;
+}
+.cluster-item:last-child { margin-bottom: 0; }
+.cluster-item:hover { border-color: var(--border2); }
+.cluster-name { font-size: 12.5px; font-weight: 500; color: var(--text); margin-bottom: 1px; }
+.cluster-sub { font-size: 11.5px; color: var(--muted); }
+
+/* ── NETWORK ──────────────────────────────────── */
+#net-wrap { position: relative; background: var(--bg); overflow: hidden; }
+#nc { display: block; width: 100%; cursor: grab; }
+#nc:active { cursor: grabbing; }
+.net-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.net-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .13s;
+}
+.net-btn:hover, .net-btn.on { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.net-legend { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+.nl-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.nl-dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid; }
+#ntt {
+  position: absolute;
+  background: rgba(29,29,31,.92);
+  color: #fff;
+  border-radius: var(--r-sm);
+  padding: 7px 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 50;
+  white-space: nowrap;
+  max-width: 220px;
+}
+#ntt.vis { opacity: 1; }
+
+/* ── SECTION DIVIDER ──────────────────────────── */
+.sec-divider {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--faint);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── MESSAGES ─────────────────────────────────── */
+.msg-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.msg-row:last-child { border-bottom: none; }
+.msg-channel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--blue);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-content-wrap { flex: 1; min-width: 0; }
+.msg-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+.msg-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.msg-flags { display: flex; gap: 4px; flex-wrap: wrap; }
+.msg-flag {
+  font-size: 9.5px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1px solid var(--red-border);
+}
+.msg-flag.forward {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border-color: var(--blue-mid);
+}
+.msg-flag.media {
+  background: var(--orange-soft);
+  color: var(--orange);
+  border-color: var(--orange-border);
+}
+.msg-risk-col { flex-shrink: 0; width: 72px; display: flex; justify-content: flex-end; }
+
+.msg-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.msg-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+.msg-stat {
+  padding: 12px 18px;
+  border-right: 1px solid var(--border);
+}
+.msg-stat:last-child { border-right: none; }
+.msg-stat-label { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+.msg-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: -.02em; }
+
+/* ── FOOTER ───────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+}
+.footer-left { font-size: 11.5px; color: var(--faint); }
+.footer-tags { display: flex; gap: 6px; }
+.footer-tag {
+  font-size: 11px;
+  color: var(--faint);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-icon"></div>
-    SAFETELEGRAM INDEX
-  </div>
-  <div class="topbar-meta">
-    <span><span class="status-dot"></span>LIVE MONITORING</span>
-    <span>DATASET: Jan–Jun 2024</span>
-    <span>CHANNELS: 184</span>
-    <span style="color: var(--accent2);">v0.4-alpha</span>
-  </div>
-</div>
-
-<!-- NAV -->
-<div class="nav">
-  <div class="nav-tab active" onclick="switchTab('overview', this)">Overview</div>
-  <div class="nav-tab" onclick="switchTab('channels', this)">Channel Explorer</div>
-  <div class="nav-tab" onclick="switchTab('keywords', this)">Keyword Trends</div>
-  <div class="nav-tab" onclick="switchTab('network', this)">Network Map</div>
-</div>
-
-<!-- ===== OVERVIEW PANEL ===== -->
-<div id="panel-overview" class="panel active">
-<div class="container">
-
-  <div class="alert-strip">
-    <span class="alert-icon">⚠</span>
-    <span><strong>Surge detected:</strong> +340% new channel registrations in the last 72 hours. Likely coordinated bot network. 14 new channels flagged CRITICAL.</span>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat-card accent">
-      <div class="stat-label">Total Channels</div>
-      <div class="stat-value">184</div>
-      <div class="stat-sub"><span class="up">↑ 23</span> this month</div>
-    </div>
-    <div class="stat-card danger">
-      <div class="stat-label">Critical Risk</div>
-      <div class="stat-value">41</div>
-      <div class="stat-sub"><span class="up">↑ 14</span> new (72h)</div>
-    </div>
-    <div class="stat-card blue">
-      <div class="stat-label">Total Subscribers</div>
-      <div class="stat-value">2.4M</div>
-      <div class="stat-sub"><span class="up">↑ 18%</span> MoM</div>
-    </div>
-    <div class="stat-card warn">
-      <div class="stat-label">Active Bots</div>
-      <div class="stat-value">27</div>
-      <div class="stat-sub">across 6 clusters</div>
-    </div>
-    <div class="stat-card yellow">
-      <div class="stat-label">Unique Keywords</div>
-      <div class="stat-value">312</div>
-      <div class="stat-sub"><span class="up">+48</span> euphemisms</div>
-    </div>
-  </div>
-
-  <div class="section-label">Automated Insights</div>
-  <div class="insight-grid">
-    <div class="insight-card type-growth">
-      <div class="insight-type">Growth Signal</div>
-      <div class="insight-title">Ecosystem expanded 840% since Jan 2024</div>
-      <div class="insight-desc">Primary driver: viral promotion via short-form video platforms redirecting to t.me/ links.</div>
-    </div>
-    <div class="insight-card type-pattern">
-      <div class="insight-type">Migration Pattern</div>
-      <div class="insight-title">Post-ban migration takes avg. 4.2 days</div>
-      <div class="insight-desc">Banned channels reconstitute under new names within 1 week. 73% retain 60%+ of original subscribers.</div>
-    </div>
-    <div class="insight-card type-keyword">
-      <div class="insight-type">Language Drift</div>
-      <div class="insight-title">"Undress" replaced by "reveal" & "xray"</div>
-      <div class="insight-desc">Keyword evolution accelerating. New euphemisms appear every 8–12 days on average.</div>
-    </div>
-  </div>
-
-  <div class="grid-3">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Ecosystem Growth Timeline</span>
-        <span class="card-badge">Jan–Jun 2024</span>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L4 6V12C4 16.4 7.4 20.5 12 22C16.6 20.5 20 16.4 20 12V6L12 2Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
+      <span class="logo-name">SafeTelegram</span>
+    </div>
+    <div class="logo-sub">Intelligence Platform</div>
+  </div>
+
+  <div class="live-row">
+    <div class="live-dot"></div>
+    <span class="live-text">Live monitoring active</span>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="nav-section-label">Analytics</div>
+    <div class="nav-item active" onclick="switchTab('overview',this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview <span class="nav-badge" id="newbadge">14</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('channels',this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Channels
+    </div>
+    <div class="nav-item" onclick="switchTab('messages',this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 9h8M8 13h5M3 20l1.3-3.9C3.17 14.7 3 13.37 3 12 3 7.03 7.03 3 12 3s9 4.03 9 9-4.03 9-9 9c-1.37 0-2.7-.17-3.9-.5L3 20z"/></svg>
+      Messages
+    </div>
+    <div class="nav-item" onclick="switchTab('keywords',this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Keywords
+    </div>
+    <div class="nav-item" onclick="switchTab('network',this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
+      Network
+    </div>
+  </nav>
+
+  <div class="sb-foot">
+    <div class="sb-foot-text">For journalists, NGOs & researchers. Metadata only.</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="bc">
+      <span class="bc-root">SafeTelegram</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-cur" id="bct">Overview</span>
+    </div>
+    <div class="tb-right">
+      <span class="tb-meta">Jan–Jun 2024 · v0.4-alpha</span>
+      <button class="btn-export" onclick="alert('Export coming soon')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </div>
+  </header>
+
+  <div class="page">
+
+  <!-- ══ OVERVIEW ══ -->
+  <div id="panel-overview" class="panel active">
+    <div class="page-header">
+      <div class="page-title">Overview</div>
+      <div class="page-sub">High-level summary of harmful AI content across Telegram</div>
+    </div>
+
+    <div class="alert">
+      <div class="alert-dot"></div>
+      <div>
+        <strong>Surge detected — coordinated activity</strong>
+        <p>+340% new channel registrations in last 72 hours. 14 channels flagged Critical. Likely coordinated bot network expansion.</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Channels</div>
+        <div class="stat-value" id="sv-total">184</div>
+        <div class="stat-trend"><span class="up">↑ 23</span> this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Critical Risk</div>
+        <div class="stat-value red" id="sv-crit">41</div>
+        <div class="stat-trend"><span class="up">↑ 14</span> in last 72h</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Subscribers</div>
+        <div class="stat-value orange" id="sv-subs">2.4M</div>
+        <div class="stat-trend"><span class="up">↑ 18%</span> month-on-month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Keywords Tracked</div>
+        <div class="stat-value" id="sv-kw">312</div>
+        <div class="stat-trend"><span class="up">+48</span> new euphemisms</div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Ecosystem Growth</span><span class="card-tag">Jan–Jun 2024</span></div>
+        <div class="card-body"><div class="ht"><canvas id="growthChart"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Risk Distribution</span><span class="card-tag" id="rdb">184 channels</span></div>
+        <div class="card-body"><div class="ht"><canvas id="riskChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Key Events Timeline</span><span class="card-tag">Annotated</span></div>
       <div class="card-body">
-        <div class="chart-wrap">
-          <canvas id="growthChart"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Risk Distribution</span>
-        <span class="card-badge">184 channels</span>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap">
-          <canvas id="riskChart"></canvas>
+        <div class="timeline">
+          <div class="tl-row"><span class="tl-date">Jan 2024</span><div class="tl-pip" style="background:var(--red-soft);border-color:var(--red)"></div><div><div class="tl-title">NudifyBot 3.0 launches</div><div class="tl-sub">+5 channels, +8k subscribers in first week</div></div></div>
+          <div class="tl-row"><span class="tl-date">Mar 2024</span><div class="tl-pip" style="background:var(--orange-soft);border-color:var(--orange)"></div><div><div class="tl-title">Viral TikTok promotion wave</div><div class="tl-sub">+25 channels, +90k subscribers via influencer referrals</div></div></div>
+          <div class="tl-row"><span class="tl-date">Apr 2024</span><div class="tl-pip" style="background:var(--blue-soft);border-color:var(--blue)"></div><div><div class="tl-title">Telegram policy — 38 bans</div><div class="tl-sub">Migration to new aliases begins within 96h. 73% retain original subscribers.</div></div></div>
+          <div class="tl-row"><span class="tl-date">May 2024</span><div class="tl-pip" style="background:var(--yellow-soft);border-color:var(--yellow)"></div><div><div class="tl-title">Language shift detected</div><div class="tl-sub">"nudify" drops 60%; "xray" &amp; "reveal" surge in new channels</div></div></div>
+          <div class="tl-row"><span class="tl-date">Jun 2024</span><div class="tl-pip" style="background:var(--red-soft);border-color:var(--red)"></div><div><div class="tl-title">New coordinated cluster — 14 channels</div><div class="tl-sub">Shared admin infra, bot-driven growth, cross-platform coordination</div></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Key Events Timeline</span>
-        <span class="card-badge">Annotated</span>
+  <!-- ══ CHANNELS ══ -->
+  <div id="panel-channels" class="panel">
+    <div class="page-header">
+      <div class="page-title">Channels</div>
+      <div class="page-sub">Full indexed database — filter, sort and search all tracked channels</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Channels by Risk</span><span class="card-tag">Breakdown</span></div>
+        <div class="card-body"><div class="ht"><canvas id="riskBarChart"></canvas></div></div>
       </div>
-      <div class="card-body">
-        <div class="timeline-event">
-          <span class="tl-date">Jan 2024</span>
-          <div class="tl-dot" style="background:var(--danger)"></div>
-          <div class="tl-content">
-            <div class="tl-title">NudifyBot 3.0 launch</div>
-            <div class="tl-sub">+5 channels, +8k subscribers in first week</div>
-          </div>
-        </div>
-        <div class="timeline-event">
-          <span class="tl-date">Mar 2024</span>
-          <div class="tl-dot" style="background:var(--warn)"></div>
-          <div class="tl-content">
-            <div class="tl-title">Viral TikTok promotion wave</div>
-            <div class="tl-sub">+25 channels, +90k subscribers. 14 influencer accounts linked</div>
-          </div>
-        </div>
-        <div class="timeline-event">
-          <span class="tl-date">Apr 2024</span>
-          <div class="tl-dot" style="background:var(--accent2)"></div>
-          <div class="tl-content">
-            <div class="tl-title">Telegram policy update</div>
-            <div class="tl-sub">38 channels banned. Migration to new aliases begins within 96h</div>
-          </div>
-        </div>
-        <div class="timeline-event">
-          <span class="tl-date">May 2024</span>
-          <div class="tl-dot" style="background:var(--yellow)"></div>
-          <div class="tl-content">
-            <div class="tl-title">Language shift detected</div>
-            <div class="tl-sub">Keyword "nudify" drops 60%; "xray" & "reveal" surge</div>
-          </div>
-        </div>
-        <div class="timeline-event">
-          <span class="tl-date">Jun 2024</span>
-          <div class="tl-dot" style="background:var(--danger)"></div>
-          <div class="tl-content">
-            <div class="tl-title">New coordinated cluster identified</div>
-            <div class="tl-sub">14 channels, shared admin infrastructure, bot-driven growth</div>
-          </div>
-        </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Monthly Discovery Rate</span><span class="card-tag">New channels</span></div>
+        <div class="card-body"><div class="ht"><canvas id="discChart"></canvas></div></div>
       </div>
     </div>
+
+    <div style="height:10px"></div>
 
     <div class="card">
-      <div class="card-header">
-        <span class="card-title">Top Active Channels</span>
-        <span class="card-badge">by subscribers</span>
+      <div class="card-header"><span class="card-title">Channel Database</span><span class="card-tag" id="ch-count">0 channels</span></div>
+      <div class="search-row">
+        <input class="search-input" id="si" placeholder="Search channels, usernames…" oninput="renderChannels()">
+        <button class="filter-btn on" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn crit" onclick="setFilter('critical',this)">Critical</button>
+        <button class="filter-btn high" onclick="setFilter('high',this)">High</button>
+        <button class="filter-btn med" onclick="setFilter('medium',this)">Medium</button>
+        <button class="filter-btn" onclick="setFilter('low',this)">Low</button>
       </div>
-      <div class="card-body" style="padding:0">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Channel</th>
-              <th>Subscribers</th>
-              <th>Risk</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="channel-name">@xray_reveal_pro</span></td>
-              <td><div class="subs-bar">342k <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div></div></td>
-              <td><span class="risk-badge risk-critical">Critical</span></td>
-            </tr>
-            <tr>
-              <td><span class="channel-name">@deepfake_tools_v2</span></td>
-              <td><div class="subs-bar">218k <div class="bar-track"><div class="bar-fill" style="width:63%"></div></div></div></td>
-              <td><span class="risk-badge risk-critical">Critical</span></td>
-            </tr>
-            <tr>
-              <td><span class="channel-name">@ai_cloth_remove</span></td>
-              <td><div class="subs-bar">187k <div class="bar-track"><div class="bar-fill" style="width:54%"></div></div></div></td>
-              <td><span class="risk-badge risk-critical">Critical</span></td>
-            </tr>
-            <tr>
-              <td><span class="channel-name">@undress_ai_bot</span></td>
-              <td><div class="subs-bar">124k <div class="bar-track"><div class="bar-fill" style="width:36%"></div></div></div></td>
-              <td><span class="risk-badge risk-high">High</span></td>
-            </tr>
-            <tr>
-              <td><span class="channel-name">@reveal_hd_free</span></td>
-              <td><div class="subs-bar">98k <div class="bar-track"><div class="bar-fill" style="width:28%"></div></div></div></td>
-              <td><span class="risk-badge risk-high">High</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div>
-</div>
-
-<!-- ===== CHANNELS PANEL ===== -->
-<div id="panel-channels" class="panel">
-<div class="container">
-
-  <div class="search-row">
-    <input class="search-input" placeholder="Search channels, keywords, usernames…" type="text" id="searchInput" oninput="filterChannels()">
-    <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-    <button class="filter-chip" onclick="setFilter('critical', this)">Critical</button>
-    <button class="filter-chip" onclick="setFilter('high', this)">High</button>
-    <button class="filter-chip" onclick="setFilter('medium', this)">Medium</button>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Channel Database</span>
-      <span class="card-badge" id="channelCount">184 channels</span>
-    </div>
-    <div class="card-body" style="padding:0; overflow-x:auto;">
-      <table class="data-table" id="channelTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Channel</th>
-            <th>Category</th>
-            <th>Subscribers</th>
-            <th>Created</th>
-            <th>Last Active</th>
-            <th>Risk</th>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead><tr>
+            <th onclick="sortBy('_idx')">#</th>
+            <th onclick="sortBy('name')">Channel</th>
+            <th onclick="sortBy('category')">Category</th>
+            <th onclick="sortBy('subs')">Subscribers</th>
+            <th onclick="sortBy('created')">Discovered</th>
+            <th onclick="sortBy('lastActive')">Last Active</th>
+            <th onclick="sortBy('risk')">Risk</th>
             <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="channelTableBody">
-        </tbody>
-      </table>
+          </tr></thead>
+          <tbody id="ch-tbody"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-</div>
-</div>
-
-<!-- ===== KEYWORDS PANEL ===== -->
-<div id="panel-keywords" class="panel">
-<div class="container">
-
-  <div class="grid-2">
     <div class="card">
-      <div class="card-header">
-        <span class="card-title">Keyword Frequency Evolution</span>
-        <span class="card-badge">TF-IDF weighted</span>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:260px">
-          <canvas id="keywordChart"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Euphemism Drift Map</span>
-        <span class="card-badge">language evolution</span>
-      </div>
-      <div class="card-body">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:2.2;color:var(--muted)">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="color:var(--danger);font-size:13px">●</span>
-            <span style="color:var(--text)">nudify</span>
-            <span style="color:var(--muted);margin-left:4px">→</span>
-            <span style="color:var(--warn)">undress</span>
-            <span style="color:var(--muted)">→</span>
-            <span style="color:var(--yellow)">xray</span>
-            <span style="color:var(--muted)">→</span>
-            <span style="color:var(--accent)">reveal</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="color:var(--danger);font-size:13px">●</span>
-            <span style="color:var(--text)">deepnude</span>
-            <span style="color:var(--muted)">→</span>
-            <span style="color:var(--warn)">deep fake</span>
-            <span style="color:var(--muted)">→</span>
-            <span style="color:var(--accent)">ai swap</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="color:var(--danger);font-size:13px">●</span>
-            <span style="color:var(--text)">cloth remover</span>
-            <span style="color:var(--muted)">→</span>
-            <span style="color:var(--accent)">cloth reveal ai</span>
-          </div>
-          <div style="margin-top:12px;padding:10px;background:var(--surface2);border:1px solid var(--border)">
-            <div style="color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">New terms detected (last 30d)</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">
-              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">invisible filter</span>
-              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">ai mirror</span>
-              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">true vision</span>
-              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">hd decode</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Top Keywords by Occurrence</span>
-      <span class="card-badge">312 tracked terms</span>
-    </div>
-    <div class="card-body">
-      <div id="keywordList"></div>
-    </div>
-  </div>
-
-</div>
-</div>
-
-<!-- ===== NETWORK PANEL ===== -->
-<div id="panel-network" class="panel">
-<div class="container">
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-header">
-      <span class="card-title">Channel Forward Network</span>
-      <span class="card-badge">NetworkX · 184 nodes · 423 edges</span>
-    </div>
-    <div class="card-body" style="padding:0">
-      <canvas id="networkCanvas" width="1200" height="380"></canvas>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Top Hub Channels</span>
-        <span class="card-badge">by connection degree</span>
-      </div>
-      <div class="card-body" style="padding:0">
-        <table class="data-table">
-          <thead><tr><th>Channel</th><th>In-links</th><th>Out-links</th><th>Degree</th></tr></thead>
+      <div class="card-header"><span class="card-title">Top Channels by Subscribers</span><span class="card-tag">API data</span></div>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead><tr><th>Channel</th><th>Subscribers</th><th>Risk</th><th>Status</th></tr></thead>
           <tbody>
-            <tr><td><span class="channel-name">@xray_reveal_pro</span></td><td>34</td><td>18</td><td style="color:var(--danger)">52</td></tr>
-            <tr><td><span class="channel-name">@reveal_network_hub</span></td><td>28</td><td>22</td><td style="color:var(--danger)">50</td></tr>
-            <tr><td><span class="channel-name">@deepfake_tools_v2</span></td><td>19</td><td>21</td><td style="color:var(--warn)">40</td></tr>
-            <tr><td><span class="channel-name">@ai_cloth_remove</span></td><td>22</td><td>14</td><td style="color:var(--warn)">36</td></tr>
-            <tr><td><span class="channel-name">@undress_ai_bot</span></td><td>12</td><td>17</td><td style="color:var(--yellow)">29</td></tr>
+            <tr><td><span class="ch-name">@xray_reveal_pro</span></td><td><div class="sub-row"><span class="mono">342k</span><div class="sub-bar"><div class="sub-fill" style="width:100%"></div></div></div></td><td><span class="badge b-crit">Critical</span></td><td><span class="status-active">Active</span></td></tr>
+            <tr><td><span class="ch-name">@deepfake_tools_v2</span></td><td><div class="sub-row"><span class="mono">218k</span><div class="sub-bar"><div class="sub-fill" style="width:63%"></div></div></div></td><td><span class="badge b-crit">Critical</span></td><td><span class="status-active">Active</span></td></tr>
+            <tr><td><span class="ch-name">@ai_cloth_remove</span></td><td><div class="sub-row"><span class="mono">187k</span><div class="sub-bar"><div class="sub-fill" style="width:54%"></div></div></div></td><td><span class="badge b-crit">Critical</span></td><td><span class="status-active">Active</span></td></tr>
+            <tr><td><span class="ch-name">@undress_ai_bot</span></td><td><div class="sub-row"><span class="mono">124k</span><div class="sub-bar"><div class="sub-fill" style="width:36%"></div></div></div></td><td><span class="badge b-high">High</span></td><td><span class="status-active">Active</span></td></tr>
+            <tr><td><span class="ch-name">@reveal_hd_free</span></td><td><div class="sub-row"><span class="mono">98k</span><div class="sub-bar"><div class="sub-fill" style="width:28%"></div></div></div></td><td><span class="badge b-high">High</span></td><td><span class="status-banned">Banned</span></td></tr>
           </tbody>
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- ══ MESSAGES ══ -->
+  <div id="panel-messages" class="panel">
+    <div class="page-header">
+      <div class="page-title">Messages</div>
+      <div class="page-sub">All collected messages across tracked channels — searchable and filterable</div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div class="msg-stats-strip">
+        <div class="msg-stat">
+          <div class="msg-stat-label">Total Messages</div>
+          <div class="msg-stat-val" id="msg-total">—</div>
+        </div>
+        <div class="msg-stat">
+          <div class="msg-stat-label">Flagged</div>
+          <div class="msg-stat-val" id="msg-flagged" style="color:var(--red)">—</div>
+        </div>
+        <div class="msg-stat">
+          <div class="msg-stat-label">Forwarded</div>
+          <div class="msg-stat-val" id="msg-forwarded" style="color:var(--blue)">—</div>
+        </div>
+        <div class="msg-stat">
+          <div class="msg-stat-label">With Media</div>
+          <div class="msg-stat-val" id="msg-media" style="color:var(--orange)">—</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Cluster Analysis</span>
-        <span class="card-badge">6 clusters detected</span>
+        <span class="card-title">Message Feed</span>
+        <span class="card-tag" id="msg-count">0 messages</span>
       </div>
-      <div class="card-body">
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster A — Bot Infrastructure</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px">38 channels · shared admin keys · bot-driven</div>
+      <div class="msg-search-row">
+        <input class="search-input" id="msg-search" placeholder="Search message text, channel name…" oninput="renderMessages()">
+        <button class="filter-btn on" onclick="setMsgFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setMsgFilter('flagged',this)">Flagged</button>
+        <button class="filter-btn" onclick="setMsgFilter('forwarded',this)">Forwarded</button>
+        <button class="filter-btn" onclick="setMsgFilter('media',this)">Has Media</button>
+      </div>
+      <div class="card-body" style="padding:0 18px; max-height:560px; overflow-y:auto">
+        <div id="msg-list"></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:10px">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Message Volume Over Time</span><span class="card-tag">Daily</span></div>
+        <div class="card-body"><div class="ht"><canvas id="msgVolumeChart"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Top Channels by Messages</span><span class="card-tag">Count</span></div>
+        <div class="card-body"><div class="ht"><canvas id="msgChannelChart"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ KEYWORDS ══ -->
+  <div id="panel-keywords" class="panel">
+    <div class="page-header">
+      <div class="page-title">Keywords</div>
+      <div class="page-sub">TF-IDF weighted frequency analysis and language evolution tracking</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Keyword Frequency Evolution</span><span class="card-tag">TF-IDF weighted</span></div>
+        <div class="card-body"><div class="hlg"><canvas id="kwChart"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Category Distribution</span><span class="card-tag">By theme</span></div>
+        <div class="card-body"><div class="hlg"><canvas id="kwCatChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Top Keywords</span><span class="card-tag" id="kwcount">0 terms</span></div>
+        <div class="card-body" style="max-height:300px;overflow-y:auto">
+          <div id="kwlist"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Euphemism Drift Map</span><span class="card-tag">Language evolution</span></div>
+        <div class="card-body">
+          <div class="drift-row"><span class="drift-tag dt-old">nudify</span><span class="dt-arrow">→</span><span class="drift-tag dt-mid">undress</span><span class="dt-arrow">→</span><span class="drift-tag dt-mid">xray</span><span class="dt-arrow">→</span><span class="drift-tag dt-new">reveal</span></div>
+          <div class="drift-row"><span class="drift-tag dt-old">deepnude</span><span class="dt-arrow">→</span><span class="drift-tag dt-mid">deep fake</span><span class="dt-arrow">→</span><span class="drift-tag dt-new">ai swap</span></div>
+          <div class="drift-row"><span class="drift-tag dt-old">cloth remover</span><span class="dt-arrow">→</span><span class="drift-tag dt-new">cloth reveal ai</span></div>
+          <div class="new-terms-block">
+            <div class="new-terms-label">New terms — last 30 days</div>
+            <div class="new-terms-chips">
+              <span class="chip">invisible filter</span><span class="chip">ai mirror</span>
+              <span class="chip">true vision</span><span class="chip">hd decode</span>
+              <span class="chip">see-through bot</span>
             </div>
-            <span class="risk-badge risk-critical">Critical</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster B — Promo Network</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px">52 channels · referral-based growth</div>
-            </div>
-            <span class="risk-badge risk-high">High</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster C — Mirror Channels</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px">27 channels · post-ban migration group</div>
-            </div>
-            <span class="risk-badge risk-high">High</span>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-</div>
-</div>
+  <!-- ══ NETWORK ══ -->
+  <div id="panel-network" class="panel">
+    <div class="page-header">
+      <div class="page-title">Network Map</div>
+      <div class="page-sub">Physics-based graph · Drag nodes · Scroll to zoom · Double-click to pin</div>
+    </div>
 
-<!-- FOOTER -->
-<div class="footer-strip">
-  <span>SAFETELEGRAM INDEX · RESEARCH INFRASTRUCTURE · OPEN SOURCE</span>
-  <span>FOR USE BY JOURNALISTS · NGOs · ACADEMIC RESEARCHERS · DIGITAL SAFETY GROUPS</span>
-  <span>DATA DOES NOT LINK TO LIVE CHANNELS · METADATA ONLY</span>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Channel Forward Network</span><span class="card-tag" id="net-badge">building…</span></div>
+      <div id="net-wrap">
+        <canvas id="nc" height="520"></canvas>
+        <div id="ntt"></div>
+      </div>
+      <div class="net-ctrl">
+        <button class="net-btn" onclick="netRestart()">↺ Restart</button>
+        <button class="net-btn" onclick="netZoom(0)">⊙ Reset View</button>
+        <button class="net-btn on" id="lblbtn" onclick="toggleLabels()">Labels On</button>
+        <button class="net-btn" id="critbtn" onclick="toggleRisk('critical')" style="border-color:var(--red);color:var(--red)">Critical Only</button>
+        <button class="net-btn" onclick="unpinAll()">Unpin All</button>
+        <div class="net-legend">
+          <div class="nl-item"><div class="nl-dot" style="background:var(--red-soft);border-color:var(--red)"></div>Critical</div>
+          <div class="nl-item"><div class="nl-dot" style="background:var(--orange-soft);border-color:var(--orange)"></div>High</div>
+          <div class="nl-item"><div class="nl-dot" style="background:var(--yellow-soft);border-color:var(--yellow)"></div>Medium</div>
+          <div class="nl-item"><div class="nl-dot" style="background:var(--green-soft);border-color:var(--green)"></div>Low</div>
+          <div class="nl-item"><div class="nl-dot" style="background:var(--surface2);border-color:var(--faint)"></div>Bridge</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Top Hub Channels</span><span class="card-tag">By degree centrality</span></div>
+        <div class="table-wrap">
+          <table class="dt">
+            <thead><tr><th>Channel</th><th>In-links</th><th>Out-links</th><th>Degree</th></tr></thead>
+            <tbody>
+              <tr><td><span class="ch-name">@xray_reveal_pro</span></td><td class="mono">34</td><td class="mono">18</td><td class="mono" style="color:var(--red);font-weight:600">52</td></tr>
+              <tr><td><span class="ch-name">@reveal_network_hub</span></td><td class="mono">28</td><td class="mono">22</td><td class="mono" style="color:var(--red);font-weight:600">50</td></tr>
+              <tr><td><span class="ch-name">@deepfake_tools_v2</span></td><td class="mono">19</td><td class="mono">21</td><td class="mono" style="color:var(--orange);font-weight:600">40</td></tr>
+              <tr><td><span class="ch-name">@ai_cloth_remove</span></td><td class="mono">22</td><td class="mono">14</td><td class="mono" style="color:var(--orange);font-weight:600">36</td></tr>
+              <tr><td><span class="ch-name">@undress_ai_bot</span></td><td class="mono">12</td><td class="mono">17</td><td class="mono" style="color:#997a00;font-weight:600">29</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">Cluster Analysis</span><span class="card-tag">6 detected</span></div>
+        <div class="card-body">
+          <div class="cluster-item"><div><div class="cluster-name">Cluster A — Bot Infrastructure</div><div class="cluster-sub">38 channels · shared admin keys · bot-driven</div></div><span class="badge b-crit">Critical</span></div>
+          <div class="cluster-item"><div><div class="cluster-name">Cluster B — Promo Network</div><div class="cluster-sub">52 channels · referral-based growth</div></div><span class="badge b-high">High</span></div>
+          <div class="cluster-item"><div><div class="cluster-name">Cluster C — Mirror Channels</div><div class="cluster-sub">27 channels · post-ban migration</div></div><span class="badge b-high">High</span></div>
+          <div class="cluster-item"><div><div class="cluster-name">Cluster D — Language Drift</div><div class="cluster-sub">18 channels · new euphemisms</div></div><span class="badge b-med">Medium</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /page -->
+
+  <footer class="footer">
+    <span class="footer-left">SafeTelegram Intelligence Platform · Research Infrastructure · Open Source</span>
+    <div class="footer-tags">
+      <span class="footer-tag">Journalists</span>
+      <span class="footer-tag">NGOs</span>
+      <span class="footer-tag">Academic</span>
+      <span class="footer-tag">Metadata only</span>
+    </div>
+  </footer>
 </div>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : 'http://localhost:3000';
+const API = 'http://localhost:3000';
+const RCOL = { critical:'#ff3b30', high:'#ff9500', medium:'#ffcc00', low:'#30d158', unclassified:'#aeaeb2', bridge:'#aeaeb2' };
+const RBGA = { critical:'rgba(255,59,48,.1)', high:'rgba(255,149,0,.1)', medium:'rgba(255,204,0,.1)', low:'rgba(48,209,88,.1)', unclassified:'rgba(174,174,178,.1)', bridge:'rgba(174,174,178,.1)' };
+const RORDER = { critical:0, high:1, medium:2, low:3, unclassified:4 };
 
-// ─── DATA FETCHING ───────────────────────────────────────────────────────────
-let channelData = [];
-let keywordData = [];
-let statsData = { totalChannels: 0, criticalRisk: 0, totalSubscribers: 0, activeBots: 0, totalKeywords: 0 };
+let channelData=[], keywordData=[], netAPIData=null, messageData=[];
+let curFilter='all', sortCol='_idx', sortDir=1;
+let msgFilter='all';
 
-async function fetchAllData() {
+/* ── STATIC FALLBACK ── */
+const SCHAN = [
+  {name:'@xray_reveal_pro',category:'Bot Service',subs:342000,created:'Jan 2024',lastActive:'2h ago',risk:'critical',status:'Active'},
+  {name:'@deepfake_tools_v2',category:'Tool Hub',subs:218000,created:'Jan 2024',lastActive:'4h ago',risk:'critical',status:'Active'},
+  {name:'@ai_cloth_remove',category:'Bot Service',subs:187000,created:'Feb 2024',lastActive:'1d ago',risk:'critical',status:'Active'},
+  {name:'@nudify_network',category:'Network Hub',subs:155000,created:'Jan 2024',lastActive:'6h ago',risk:'critical',status:'Active'},
+  {name:'@deepstrip_v3',category:'Bot Service',subs:143000,created:'Mar 2024',lastActive:'2d ago',risk:'critical',status:'Active'},
+  {name:'@undress_ai_bot',category:'Bot Service',subs:124000,created:'Feb 2024',lastActive:'3h ago',risk:'high',status:'Active'},
+  {name:'@reveal_hd_free',category:'Promo',subs:98000,created:'Mar 2024',lastActive:'Unknown',risk:'high',status:'Banned'},
+  {name:'@mirror_bot_a1',category:'Mirror',subs:54000,created:'Apr 2024',lastActive:'1d ago',risk:'high',status:'Active'},
+  {name:'@cloth_reveal_pro',category:'Bot Service',subs:45000,created:'Apr 2024',lastActive:'5h ago',risk:'high',status:'Active'},
+  {name:'@ai_swap_studio',category:'Tool Hub',subs:38000,created:'Jun 2024',lastActive:'8h ago',risk:'medium',status:'Active'},
+  {name:'@invisible_filter_ai',category:'Tool Hub',subs:29000,created:'May 2024',lastActive:'12h ago',risk:'medium',status:'Active'},
+  {name:'@promo_reveal_net',category:'Promo',subs:21000,created:'Mar 2024',lastActive:'Unknown',risk:'medium',status:'Banned'},
+  {name:'@see_through_bot',category:'Bot Service',subs:15000,created:'Jun 2024',lastActive:'1d ago',risk:'medium',status:'Active'},
+  {name:'@hd_decode_beta',category:'Tool Hub',subs:12000,created:'Jun 2024',lastActive:'2d ago',risk:'low',status:'Active'},
+  {name:'@truevis_bot',category:'Bot Service',subs:9000,created:'May 2024',lastActive:'3d ago',risk:'low',status:'Active'},
+  {name:'@ai_mirror_research',category:'Research',subs:4000,created:'Apr 2024',lastActive:'1d ago',risk:'low',status:'Active'},
+];
+
+const SKWS = [
+  {term:'nudify',count:9800,pct:100},{term:'undress ai',count:8200,pct:83},
+  {term:'xray filter',count:7100,pct:72},{term:'reveal bot',count:6400,pct:65},
+  {term:'deepnude',count:5800,pct:59},{term:'cloth remove',count:5100,pct:52},
+  {term:'ai swap',count:4700,pct:47},{term:'invisible filter',count:3900,pct:39},
+  {term:'deep fake nude',count:3400,pct:34},{term:'hd decode',count:2800,pct:28},
+  {term:'true vision',count:2400,pct:24},{term:'ai mirror',count:2100,pct:21},
+  {term:'see through',count:1900,pct:19},{term:'strip ai',count:1700,pct:17},
+];
+
+const SMSGS = [
+  {channel:'@xray_reveal_pro',text:'New update released! Try our enhanced xray mode — link in bio. Invite friends for premium access.',time:'2h ago',risk:'critical',flagged:true,forwarded:false,media:false},
+  {channel:'@deepfake_tools_v2',text:'🔥 Batch processing now available. Upload up to 50 images at once. Results in under 30 seconds.',time:'4h ago',risk:'critical',flagged:true,forwarded:false,media:true},
+  {channel:'@ai_cloth_remove',text:'⚡ Join our Telegram bot: @cloth_ai_bot — 3 free credits daily. No registration needed.',time:'4h ago',risk:'critical',flagged:true,forwarded:true,media:false},
+  {channel:'@nudify_network',text:'Forwarded from @xray_reveal_pro: Try the new filter — results are insane quality now.',time:'6h ago',risk:'critical',flagged:false,forwarded:true,media:false},
+  {channel:'@mirror_bot_a1',text:'We moved. Old channel banned. New link: t.me/xray_v4_official — subscribe before deletion.',time:'8h ago',risk:'high',flagged:true,forwarded:false,media:false},
+  {channel:'@cloth_reveal_pro',text:'Premium tier now includes HD export, background removal, and unlimited credits. €9.99/mo.',time:'12h ago',risk:'high',flagged:false,forwarded:false,media:true},
+  {channel:'@undress_ai_bot',text:'[Photo] See what AI can do. Sample outputs from this week\'s users (faces blurred).',time:'14h ago',risk:'high',flagged:true,forwarded:false,media:true},
+  {channel:'@ai_swap_studio',text:'Tutorial: How to use AI face-swap + cloth removal in 3 steps. Full guide in pinned post.',time:'1d ago',risk:'medium',flagged:false,forwarded:false,media:false},
+  {channel:'@invisible_filter_ai',text:'Forwarded from @reveal_hd_free: This new "invisible filter" tool is genuinely undetectable.',time:'1d ago',risk:'medium',flagged:false,forwarded:true,media:false},
+  {channel:'@hd_decode_beta',text:'Beta v0.3 released. Fixed crash on large files. Join @hd_decode_support for help.',time:'2d ago',risk:'low',flagged:false,forwarded:false,media:false},
+  {channel:'@truevis_bot',text:'Monthly stats: 12,400 images processed. Thank you for 9,000 subscribers! Growing daily.',time:'2d ago',risk:'low',flagged:false,forwarded:false,media:false},
+  {channel:'@ai_mirror_research',text:'New research paper added: "Detection methods for AI-generated synthetic media." PDF linked.',time:'3d ago',risk:'low',flagged:false,forwarded:false,media:true},
+  {channel:'@xray_reveal_pro',text:'📢 Important: We\'re migrating our bot to avoid detection. Use @xray_v5_bot from now on.',time:'3d ago',risk:'critical',flagged:true,forwarded:false,media:false},
+  {channel:'@deepfake_tools_v2',text:'Referral campaign: get 1 month free for each person you invite. Share your code below.',time:'4d ago',risk:'critical',flagged:false,forwarded:false,media:false},
+  {channel:'@see_through_bot',text:'Forwarded from @cloth_reveal_pro: New API endpoint released for developers. Docs: docs.xrayapi.io',time:'5d ago',risk:'medium',flagged:true,forwarded:true,media:false},
+];
+
+/* ── API ── */
+async function fetchAll() {
   try {
-    // Fetch stats
-    const statsRes = await fetch(`${API_BASE}/api/stats`);
-    if (statsRes.ok) {
-      statsData = await statsRes.json();
-      updateStatsDisplay();
-    }
-    
-    // Fetch channels
-    const channelsRes = await fetch(`${API_BASE}/api/channels`);
-    if (channelsRes.ok) {
-      channelData = await channelsRes.json();
-      renderChannels(channelData);
-    }
-    
-    // Fetch keywords
-    const keywordsRes = await fetch(`${API_BASE}/api/keywords`);
-    if (keywordsRes.ok) {
-      keywordData = await keywordsRes.json();
-      renderKeywords(keywordData);
-    }
-    
-    console.log('✅ Data loaded from API');
-  } catch (err) {
-    console.error('❌ API fetch error:', err);
-    // Fallback to empty state - stats will show 0
-    renderChannels([]);
-    renderKeywords([]);
-  }
+    const [sr,cr,kr,nr,mr] = await Promise.all([
+      fetch(`${API}/api/stats`), fetch(`${API}/api/channels`),
+      fetch(`${API}/api/keywords`), fetch(`${API}/api/network`),
+      fetch(`${API}/api/messages`)
+    ]);
+    if (sr.ok) applyStats(await sr.json());
+    if (cr.ok) { channelData = await cr.json(); }
+    if (kr.ok) { keywordData = await kr.json(); }
+    if (nr.ok) { netAPIData = await nr.json(); }
+    if (mr.ok) { messageData = await mr.json(); }
+  } catch(e) { /* offline – static fallback */ }
+  renderChannels();
+  renderKeywords();
+  renderMessages();
+  updateMessageStats();
 }
 
-function updateStatsDisplay() {
-  // Update stat cards with live data
-  const formatNumber = (n) => {
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-    return n.toString();
-  };
-  
-  const statElements = document.querySelectorAll('.stat-value');
-  if (statElements.length >= 5) {
-    statElements[0].textContent = statsData.totalChannels || 0;
-    statElements[1].textContent = statsData.criticalRisk || 0;
-    statElements[2].textContent = formatNumber(statsData.totalSubscribers || 0);
-    statElements[3].textContent = statsData.activeBots || 0;
-    statElements[4].textContent = statsData.totalKeywords || 0;
-  }
-  
-  // Update channel count in topbar
-  document.querySelectorAll('.topbar-meta span').forEach((span, i) => {
-    if (span.textContent.includes('CHANNELS:')) {
-      span.textContent = `CHANNELS: ${statsData.totalChannels || 0}`;
-    }
-  });
-}
-
-function renderChannels(data) {
-  const tbody = document.getElementById('channelTableBody');
-  const countEl = document.getElementById('channelCount');
-  if (countEl) countEl.textContent = (data.length || 0) + ' channels';
-  if (!tbody) return;
-  
-  tbody.innerHTML = data.map((c, i) => `
-    <tr>
-      <td style="color:var(--muted)">${i+1}</td>
-      <td><span class="channel-name">${c.name || 'Unknown'}</span></td>
-      <td style="color:var(--muted)">${c.category || 'Uncategorized'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace">${formatSubs(c.subs)}</td>
-      <td style="color:var(--muted)">${c.created || 'Unknown'}</td>
-      <td style="color:var(--muted)">${c.lastActive || 'Unknown'}</td>
-      <td><span class="risk-badge risk-${c.risk || 'medium'}">${c.risk || 'medium'}</span></td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${c.status==='Active'?'var(--accent)':'var(--danger)'}">${c.status || 'Unknown'}</td>
-    </tr>
-  `).join('');
-}
-
-function formatSubs(n) {
+function fmtN(n) {
   if (!n) return '0';
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
-  return n.toString();
+  if (n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if (n>=1e3) return Math.round(n/1e3)+'k';
+  return String(n);
 }
 
-function renderKeywords(data) {
-  const listEl = document.getElementById('keywordList');
-  if (!listEl) return;
-  
-  listEl.innerHTML = data.map(k => `
-    <div class="keyword-row">
-      <span class="keyword-tag">${k.term || 'Unknown'}</span>
-      <div class="keyword-freq">
-        <div class="freq-bar-track"><div class="freq-bar-fill" style="width:${k.pct || 0}%"></div></div>
-        ${(k.count || 0).toLocaleString()}
-      </div>
-    </div>
-  `).join('');
+function applyStats(s) {
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('sv-total', s.totalChannels||184);
+  set('sv-crit', s.criticalRisk||41);
+  set('sv-subs', fmtN(s.totalSubscribers||2400000));
+  set('sv-kw', s.totalKeywords||312);
+  const el=document.getElementById('rdb'); if(el) el.textContent=(s.totalChannels||184)+' channels';
 }
 
-let currentFilter = 'all';
+/* ── TABS ── */
+const TABS = {overview:'Overview',channels:'Channels',messages:'Messages',keywords:'Keywords',network:'Network'};
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('bct').textContent = TABS[id]||id;
+  if (id==='network') setTimeout(netInit, 80);
+  if (id==='messages') { renderMessages(); updateMessageStats(); }
+}
 
-function filterChannels() {
-  const q = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-  let filtered = channelData;
-  if (currentFilter !== 'all') filtered = filtered.filter(c => c.risk === currentFilter);
-  if (q) filtered = filtered.filter(c => 
-    (c.name || '').toLowerCase().includes(q) || 
-    (c.category || '').toLowerCase().includes(q)
+/* ── CHANNELS ── */
+function renderChannels() {
+  const raw = channelData.length ? channelData : SCHAN;
+  const q = (document.getElementById('si')?.value||'').toLowerCase();
+  let rows = raw.map((c,i)=>({...c,_idx:i}));
+  if (curFilter!=='all') rows=rows.filter(c=>(c.risk||'').toLowerCase()===curFilter);
+  if (q) rows=rows.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.category||'').toLowerCase().includes(q));
+  rows.sort((a,b)=>{
+    if (sortCol==='subs') return sortDir*(+a.subs- +b.subs);
+    if (sortCol==='risk') return sortDir*((RORDER[a.risk?.toLowerCase()]??4)-(RORDER[b.risk?.toLowerCase()]??4));
+    if (sortCol==='_idx') return sortDir*(a._idx-b._idx);
+    return sortDir*String(a[sortCol]||'').localeCompare(String(b[sortCol]||''));
+  });
+  const el=document.getElementById('ch-count'); if(el) el.textContent=rows.length+' channels';
+  const tb=document.getElementById('ch-tbody'); if(!tb) return;
+  const rmap = {critical:'b-crit',high:'b-high',medium:'b-med',low:'b-low',unclassified:'b-un'};
+  tb.innerHTML = rows.map((c,i)=>`
+    <tr>
+      <td class="mono" style="color:var(--faint)">${i+1}</td>
+      <td><span class="ch-name">${c.name||'—'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${c.category||'—'}</td>
+      <td><div class="sub-row"><span class="mono">${fmtN(c.subs)}</span><div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,(+c.subs||0)/3600)}%"></div></div></div></td>
+      <td class="mono" style="color:var(--faint)">${c.created||'—'}</td>
+      <td class="mono" style="color:var(--faint)">${c.lastActive||'—'}</td>
+      <td><span class="badge ${rmap[(c.risk||'').toLowerCase()]||'b-un'}">${c.risk||'—'}</span></td>
+      <td><span class="${c.status==='Active'?'status-active':'status-banned'}">${c.status||'—'}</span></td>
+    </tr>`).join('');
+}
+
+function setFilter(f,el) {
+  curFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderChannels();
+}
+function sortBy(col) {
+  if(sortCol===col) sortDir*=-1; else {sortCol=col;sortDir=1;}
+  renderChannels();
+}
+
+/* ── MESSAGES ── */
+function updateMessageStats() {
+  const data = messageData.length ? messageData : SMSGS;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('msg-total', data.length);
+  set('msg-flagged', data.filter(m=>m.flagged).length);
+  set('msg-forwarded', data.filter(m=>m.forwarded).length);
+  set('msg-media', data.filter(m=>m.media).length);
+}
+
+function renderMessages() {
+  const data = messageData.length ? messageData : SMSGS;
+  const q = (document.getElementById('msg-search')?.value||'').toLowerCase();
+  let rows = data.slice();
+
+  if (msgFilter==='flagged') rows=rows.filter(m=>m.flagged);
+  else if (msgFilter==='forwarded') rows=rows.filter(m=>m.forwarded);
+  else if (msgFilter==='media') rows=rows.filter(m=>m.media);
+
+  if (q) rows=rows.filter(m=>
+    (m.text||'').toLowerCase().includes(q)||
+    (m.channel||'').toLowerCase().includes(q)
   );
-  renderChannels(filtered);
+
+  const el=document.getElementById('msg-count'); if(el) el.textContent=rows.length+' messages';
+  const list=document.getElementById('msg-list'); if(!list) return;
+
+  const rmap = {critical:'b-crit',high:'b-high',medium:'b-med',low:'b-low'};
+  list.innerHTML = rows.map(m=>`
+    <div class="msg-row">
+      <span class="msg-channel">${m.channel||'—'}</span>
+      <div class="msg-content-wrap">
+        <div class="msg-text">${m.text||'—'}</div>
+        <div class="msg-meta">
+          <span class="msg-time">${m.time||'—'}</span>
+          <div class="msg-flags">
+            ${m.flagged?'<span class="msg-flag">flagged</span>':''}
+            ${m.forwarded?'<span class="msg-flag forward">forwarded</span>':''}
+            ${m.media?'<span class="msg-flag media">media</span>':''}
+          </div>
+        </div>
+      </div>
+      <div class="msg-risk-col">
+        <span class="badge ${rmap[(m.risk||'').toLowerCase()]||'b-un'}">${m.risk||'—'}</span>
+      </div>
+    </div>`).join('');
 }
 
-function setFilter(f, el) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  filterChannels();
+function setMsgFilter(f,el) {
+  msgFilter=f;
+  document.querySelectorAll('.msg-search-row .filter-btn').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderMessages();
 }
 
-// Initialize on load
-document.addEventListener('DOMContentLoaded', fetchAllData);
+/* ── KEYWORDS ── */
+function renderKeywords() {
+  const data = keywordData.length ? keywordData : SKWS;
+  const el=document.getElementById('kwlist');
+  const ct=document.getElementById('kwcount');
+  if(ct) ct.textContent=data.length+' terms';
+  if(!el) return;
+  el.innerHTML = data.slice(0,20).map(k=>`
+    <div class="kw-row">
+      <span class="kw-term">${k.term||'?'}</span>
+      <div class="kw-freq">
+        <div class="kw-bar-wrap"><div class="kw-bar-fill" style="width:${k.pct||0}%"></div></div>
+        <span class="kw-count">${(+k.count||0).toLocaleString()}</span>
+      </div>
+    </div>`).join('');
+}
 
-// ─── KEYWORDS ────────────────────────────────────────────────────────────────
-// Keywords now loaded via API in fetchAllData()
-// Keeping placeholder for chart initialization
-const keywords = [];
+/* ── CHARTS ── */
+Chart.defaults.font = { family:"'JetBrains Mono', monospace", size:10 };
+Chart.defaults.color = '#aeaeb2';
+Chart.defaults.borderColor = 'rgba(0,0,0,.06)';
 
-// ─── CHARTS ──────────────────────────────────────────────────────────────────
-const chartDefaults = {
-  color: 'rgba(200,214,229,0.7)',
-  font: { family: "'IBM Plex Mono'", size: 10 }
-};
-Chart.defaults.color = chartDefaults.color;
-Chart.defaults.font = chartDefaults.font;
-Chart.defaults.borderColor = '#1e2730';
+const CH_OPTS = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'rgba(0,0,0,.04)' } }, y:{ grid:{ color:'rgba(0,0,0,.04)' }, beginAtZero:true } } };
 
-// Growth chart
-new Chart(document.getElementById('growthChart'), {
-  type: 'line',
-  data: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'New Channels',
-        data: [5, 12, 37, 8, 18, 31],
-        borderColor: '#ff3355',
-        backgroundColor: 'rgba(255,51,85,0.08)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        borderWidth: 1.5,
-      },
-      {
-        label: 'Subscribers (k)',
-        data: [8, 22, 112, 45, 90, 120],
-        borderColor: '#0094ff',
-        backgroundColor: 'rgba(0,148,255,0.06)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        borderWidth: 1.5,
-      }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', labels: { boxWidth: 8, padding: 12 } } },
-    scales: {
-      x: { grid: { color: '#1e2730' } },
-      y: { grid: { color: '#1e2730' }, beginAtZero: true }
-    }
-  }
-});
+new Chart(document.getElementById('growthChart'),{type:'line',data:{labels:['Jan','Feb','Mar','Apr','May','Jun'],datasets:[
+  {label:'New Channels',data:[5,12,37,8,18,31],borderColor:'#ff3b30',backgroundColor:'rgba(255,59,48,.06)',fill:true,tension:0.4,pointRadius:3,borderWidth:1.5,pointBackgroundColor:'#ff3b30'},
+  {label:'Subscribers (k)',data:[8,22,112,45,90,120],borderColor:'#0071e3',backgroundColor:'rgba(0,113,227,.06)',fill:true,tension:0.4,pointRadius:3,borderWidth:1.5,pointBackgroundColor:'#0071e3'}
+]},options:{...CH_OPTS,plugins:{legend:{position:'top',labels:{boxWidth:8,padding:12,font:{size:10}}}}}});
 
-// Risk donut
-new Chart(document.getElementById('riskChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Critical', 'High', 'Medium', 'Low'],
-    datasets: [{
-      data: [41, 68, 52, 23],
-      backgroundColor: ['rgba(255,51,85,0.8)', 'rgba(255,107,53,0.8)', 'rgba(255,209,102,0.8)', 'rgba(0,212,170,0.8)'],
-      borderColor: '#0a0c0f',
-      borderWidth: 3,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 12 } } },
-    cutout: '65%'
-  }
-});
+new Chart(document.getElementById('riskChart'),{type:'doughnut',data:{labels:['Critical','High','Medium','Low'],datasets:[{data:[41,68,52,23],backgroundColor:['rgba(255,59,48,.8)','rgba(255,149,0,.8)','rgba(255,204,0,.8)','rgba(48,209,88,.8)'],borderColor:'#fff',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:8,padding:10,font:{size:10}}}},cutout:'70%'}});
 
-// Keyword trend chart
-new Chart(document.getElementById('keywordChart'), {
-  type: 'line',
-  data: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      { label: 'nudify', data: [980, 860, 620, 410, 280, 190], borderColor: '#ff3355', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
-      { label: 'undress', data: [340, 520, 740, 680, 590, 420], borderColor: '#ff6b35', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
-      { label: 'xray', data: [80, 210, 480, 720, 940, 1100], borderColor: '#0094ff', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
-      { label: 'reveal', data: [40, 120, 340, 680, 890, 980], borderColor: '#00d4aa', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', labels: { boxWidth: 8, padding: 10 } } },
-    scales: {
-      x: { grid: { color: '#1e2730' } },
-      y: { grid: { color: '#1e2730' }, beginAtZero: true }
-    }
-  }
-});
+new Chart(document.getElementById('riskBarChart'),{type:'bar',data:{labels:['Critical','High','Medium','Low'],datasets:[{data:[41,68,52,23],backgroundColor:['rgba(255,59,48,.75)','rgba(255,149,0,.75)','rgba(255,204,0,.75)','rgba(48,209,88,.75)'],borderRadius:5,borderSkipped:false}]},options:CH_OPTS});
 
-// ─── NETWORK CANVAS ──────────────────────────────────────────────────────────
-function drawNetwork() {
-  const canvas = document.getElementById('networkCanvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  const W = canvas.offsetWidth;
-  const H = canvas.offsetHeight;
+new Chart(document.getElementById('discChart'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun'],datasets:[{data:[5,12,37,8,18,31],backgroundColor:'rgba(0,113,227,.65)',borderRadius:5,borderSkipped:false}]},options:CH_OPTS});
 
-  // Seeded layout
-  const nodes = [
-    // Cluster A — bot infra (top-left)
-    { x: 160, y: 100, r: 22, color: '#ff3355', label: '@xray_reveal_pro', cluster: 'A' },
-    { x: 90, y: 170, r: 14, color: '#ff3355', label: '@reveal_net_hub', cluster: 'A' },
-    { x: 220, y: 160, r: 12, color: '#ff3355', label: '@bot_admin_2', cluster: 'A' },
-    { x: 130, y: 240, r: 10, color: '#ff3355', label: '@mirror_a1', cluster: 'A' },
-    { x: 200, y: 220, r: 9, color: '#ff3355', label: '@mirror_a2', cluster: 'A' },
-    { x: 70, y: 260, r: 8, color: '#ff6b35', label: '@promo_bot_a', cluster: 'A' },
-    // Cluster B — promo (center)
-    { x: 450, y: 80, r: 18, color: '#ff6b35', label: '@deepfake_tools_v2', cluster: 'B' },
-    { x: 380, y: 150, r: 13, color: '#ff6b35', label: '@ai_cloth_remove', cluster: 'B' },
-    { x: 510, y: 150, r: 11, color: '#ff6b35', label: '@promo_net_main', cluster: 'B' },
-    { x: 420, y: 230, r: 10, color: '#ffd166', label: '@undress_ai_bot', cluster: 'B' },
-    { x: 490, y: 220, r: 9, color: '#ffd166', label: '@reveal_hd_free', cluster: 'B' },
-    { x: 360, y: 280, r: 8, color: '#ffd166', label: '@sub_node_b1', cluster: 'B' },
-    { x: 550, y: 280, r: 8, color: '#ffd166', label: '@sub_node_b2', cluster: 'B' },
-    // Cluster C — mirror (right)
-    { x: 750, y: 100, r: 16, color: '#0094ff', label: '@ai_mirror_bot', cluster: 'C' },
-    { x: 820, y: 180, r: 12, color: '#0094ff', label: '@cloth_reveal_pro', cluster: 'C' },
-    { x: 680, y: 180, r: 11, color: '#0094ff', label: '@invisible_filter', cluster: 'C' },
-    { x: 760, y: 250, r: 9, color: '#00d4aa', label: '@hd_decode_beta', cluster: 'C' },
-    { x: 860, y: 260, r: 8, color: '#00d4aa', label: '@truevis_bot', cluster: 'C' },
-    { x: 650, y: 270, r: 8, color: '#00d4aa', label: '@sub_node_c1', cluster: 'C' },
-    // Cross-cluster bridges
-    { x: 300, y: 190, r: 7, color: '#888', label: '@bridge_1', cluster: 'X' },
-    { x: 620, y: 170, r: 7, color: '#888', label: '@bridge_2', cluster: 'X' },
-  ];
+new Chart(document.getElementById('kwChart'),{type:'line',data:{labels:['Jan','Feb','Mar','Apr','May','Jun'],datasets:[
+  {label:'nudify',data:[980,860,620,410,280,190],borderColor:'#0071e3',tension:0.4,pointRadius:2,borderWidth:1.5,fill:false},
+  {label:'undress',data:[340,520,740,680,590,420],borderColor:'#5856d6',tension:0.4,pointRadius:2,borderWidth:1.5,fill:false},
+  {label:'xray',data:[80,210,480,720,940,1100],borderColor:'#32ade6',tension:0.4,pointRadius:2,borderWidth:1.5,fill:false},
+  {label:'reveal',data:[40,120,340,680,890,980],borderColor:'#64d2ff',tension:0.4,pointRadius:2,borderWidth:1.5,fill:false},
+]},options:{...CH_OPTS,plugins:{legend:{position:'top',labels:{boxWidth:8,padding:10,font:{size:10}}}}}});
 
-  const edges = [
-    [0,1],[0,2],[0,3],[0,4],[1,3],[1,5],[2,4],
-    [6,7],[6,8],[6,9],[7,9],[8,10],[9,11],[10,12],
-    [13,14],[13,15],[13,16],[14,17],[15,18],[16,19],
-    [0,19],[6,19],[6,20],[13,20],[0,20],
-    [2,9],[7,15],[3,10]
-  ];
+new Chart(document.getElementById('kwCatChart'),{type:'doughnut',data:{labels:['Bot commands','Euphemisms','Content types','Platform refs','Technical'],datasets:[{data:[38,27,18,10,7],backgroundColor:['rgba(0,113,227,.8)','rgba(88,86,214,.8)','rgba(50,173,230,.8)','rgba(100,210,255,.8)','rgba(174,174,178,.6)'],borderColor:'#fff',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:8,padding:10,font:{size:10}}}},cutout:'62%'}});
 
-  // Background glow blobs
-  const blobs = [
-    { x: 160, y: 170, r: 120, color: 'rgba(255,51,85,0.04)' },
-    { x: 450, y: 180, r: 150, color: 'rgba(255,107,53,0.04)' },
-    { x: 760, y: 190, r: 130, color: 'rgba(0,148,255,0.04)' },
-  ];
-  blobs.forEach(b => {
-    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-    g.addColorStop(0, b.color);
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
+// Messages charts
+new Chart(document.getElementById('msgVolumeChart'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun'],datasets:[{data:[1200,3400,8200,5600,9100,12400],backgroundColor:'rgba(0,113,227,.65)',borderRadius:4,borderSkipped:false}]},options:{...CH_OPTS,plugins:{legend:{display:false}}}});
+
+new Chart(document.getElementById('msgChannelChart'),{type:'bar',data:{
+  labels:['@xray_reveal_pro','@deepfake_tools_v2','@nudify_network','@ai_cloth_remove','@mirror_bot_a1'],
+  datasets:[{data:[3200,2800,2100,1900,1400],backgroundColor:'rgba(255,59,48,.65)',borderRadius:4,borderSkipped:false,barThickness:18}]
+},options:{...CH_OPTS,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,.04)'},beginAtZero:true},y:{grid:{display:false}}}}});
+
+/* ══════════════════════════════════════════
+   PHYSICS NETWORK
+══════════════════════════════════════════ */
+const N={canvas:null,ctx:null,W:0,H:0,dpr:1,nodes:[],edges:[],alpha:1,alphaDecay:.005,alphaMin:.001,running:false,zoom:{s:1,tx:0,ty:0},drag:{on:false,node:null,sx:0,sy:0,ptx:0,pty:0},hover:null,showLabels:true,riskFilt:null,frame:null,pulse:0};
+
+const STATIC_NODES=[
+  {id:0,label:'@xray_reveal_pro',risk:'critical',sz:21,cluster:0},
+  {id:1,label:'@reveal_net_hub',risk:'critical',sz:14,cluster:0},
+  {id:2,label:'@bot_admin_2',risk:'critical',sz:12,cluster:0},
+  {id:3,label:'@mirror_a1',risk:'critical',sz:9,cluster:0},
+  {id:4,label:'@mirror_a2',risk:'critical',sz:8,cluster:0},
+  {id:5,label:'@promo_bot_a',risk:'high',sz:8,cluster:0},
+  {id:6,label:'@deepfake_tools_v2',risk:'high',sz:18,cluster:1},
+  {id:7,label:'@ai_cloth_remove',risk:'high',sz:13,cluster:1},
+  {id:8,label:'@promo_net_main',risk:'high',sz:10,cluster:1},
+  {id:9,label:'@undress_ai_bot',risk:'medium',sz:9,cluster:1},
+  {id:10,label:'@reveal_hd_free',risk:'medium',sz:8,cluster:1},
+  {id:11,label:'@sub_node_b1',risk:'medium',sz:7,cluster:1},
+  {id:12,label:'@sub_node_b2',risk:'medium',sz:7,cluster:1},
+  {id:13,label:'@ai_mirror_bot',risk:'high',sz:16,cluster:2},
+  {id:14,label:'@cloth_reveal_pro',risk:'high',sz:11,cluster:2},
+  {id:15,label:'@invisible_filter',risk:'medium',sz:10,cluster:2},
+  {id:16,label:'@hd_decode_beta',risk:'low',sz:8,cluster:2},
+  {id:17,label:'@truevis_bot',risk:'low',sz:7,cluster:2},
+  {id:18,label:'@sub_node_c1',risk:'low',sz:7,cluster:2},
+  {id:19,label:'@bridge_1',risk:'bridge',sz:6,cluster:-1},
+  {id:20,label:'@bridge_2',risk:'bridge',sz:6,cluster:-1},
+  {id:21,label:'@deepstrip_v3',risk:'critical',sz:11,cluster:0},
+  {id:22,label:'@nudify_network',risk:'critical',sz:15,cluster:0},
+  {id:23,label:'@ai_swap_studio',risk:'medium',sz:8,cluster:2},
+  {id:24,label:'@see_through_bot',risk:'medium',sz:7,cluster:1},
+];
+const STATIC_EDGES=[
+  [0,1],[0,2],[0,3],[0,4],[0,5],[0,21],[0,22],[1,2],[1,3],[2,4],[2,5],
+  [6,7],[6,8],[6,9],[6,10],[7,8],[7,11],[8,9],[9,10],[10,11],[10,12],[11,12],[6,24],
+  [13,14],[13,15],[13,16],[14,15],[15,16],[15,17],[16,17],[16,18],[17,18],[13,23],
+  [19,0],[19,6],[20,13],[20,6],[20,22],[19,13],
+];
+
+function netInit(){
+  const canvas=document.getElementById('nc');if(!canvas)return;
+  N.canvas=canvas; N.ctx=canvas.getContext('2d');
+  const wrap=document.getElementById('net-wrap');
+  N.dpr=window.devicePixelRatio||1;
+  N.W=wrap.clientWidth; N.H=520;
+  canvas.width=N.W*N.dpr; canvas.height=N.H*N.dpr;
+  canvas.style.height='520px';
+  N.ctx.scale(N.dpr,N.dpr);
+  buildNodes();
+  N.alpha=1; N.running=true;
+  if(N.frame) cancelAnimationFrame(N.frame);
+  N.frame=null;
+  loop();
+  canvas.addEventListener('mousedown',mdown);
+  canvas.addEventListener('mousemove',mmove);
+  canvas.addEventListener('mouseup',mup);
+  canvas.addEventListener('dblclick',mdbl);
+  canvas.addEventListener('wheel',mwheel,{passive:false});
+}
+function buildNodes() {
+  const api = netAPIData ?? {};
+
+  // Build nodes
+  const raw = Array.isArray(api.nodes) && api.nodes.length
+    ? api.nodes.map((n, i) => ({
+        id: n.id ?? i, // preserve API id if present
+        label: n.label ?? '',
+        risk: n.risk ?? 'medium',
+        sz: n.size ?? 9,
+        cluster: Number.isFinite(n.cluster) ? n.cluster : 0
+      }))
+    : STATIC_NODES;
+
+  const cx = { 0: N.W * 0.28, 1: N.W * 0.72, 2: N.W * 0.5 };
+  const cy = { 0: N.H * 0.35, 1: N.H * 0.65, 2: N.H * 0.28 };
+
+  // Create node objects
+  N.nodes = raw.map(n => ({
+    ...n,
+    x: (cx[n.cluster] ?? N.W / 2) + (Math.random() - 0.5) * 180,
+    y: (cy[n.cluster] ?? N.H / 2) + (Math.random() - 0.5) * 140,
+    vx: 0,
+    vy: 0,
+    pinned: false,
+    deg: 0
+  }));
+
+  // Build lookup for ID → index
+  const idToIndex = new Map(N.nodes.map((n, i) => [n.id, i]));
+
+  // Build edges safely
+  const edgesRaw = Array.isArray(api.edges) && api.edges.length
+    ? api.edges.map(e => [idToIndex.get(e.source), idToIndex.get(e.target)])
+    : STATIC_EDGES;
+
+  N.edges = edgesRaw.filter(([s, t]) => s != null && t != null);
+
+  // Degree count
+  N.edges.forEach(([s, t]) => {
+    N.nodes[s].deg++;
+    N.nodes[t].deg++;
   });
 
-  // Edges
-  edges.forEach(([a, b]) => {
+  // UI badge
+  const bd = document.getElementById('net-badge');
+  if (bd) {
+    bd.textContent = `${N.nodes.length} nodes · ${N.edges.length} edges`;
+  }
+}
+
+function loop(){
+  if(!N.running){N.frame=null;return;}
+  tick(); draw();
+  N.pulse++;
+  N.frame=requestAnimationFrame(loop);
+}
+function tick(){
+  if(N.alpha<N.alphaMin){N.running=false;return;}
+  N.alpha*=(1-N.alphaDecay);
+  const k=N.W*.042;
+  N.nodes.forEach((a,i)=>{
+    if(a.pinned)return;
+    const cx=(a.cluster===0?N.W*.28:a.cluster===1?N.W*.72:a.cluster===2?N.W*.5:N.W*.5);
+    const cy=(a.cluster===0?N.H*.35:a.cluster===1?N.H*.65:a.cluster===2?N.H*.28:N.H*.5);
+    a.vx+=(cx-a.x)*.008*N.alpha;
+    a.vy+=(cy-a.y)*.008*N.alpha;
+    N.nodes.forEach((b,j)=>{if(i===j)return;const dx=a.x-b.x,dy=a.y-b.y,d=Math.max(1,Math.hypot(dx,dy)),f=k*k/d;a.vx+=dx/d*f;a.vy+=dy/d*f;});
+  });
+  N.edges.forEach(([si,ti])=>{
+    const s=N.nodes[si],t=N.nodes[ti];if(!s||!t)return;
+    const dx=t.x-s.x,dy=t.y-s.y,d=Math.max(1,Math.hypot(dx,dy));
+    const f=(d-k*.9)*N.alpha*.18;
+    const fx=dx/d*f,fy=dy/d*f;
+    if(!s.pinned){s.vx+=fx;s.vy+=fy;}
+    if(!t.pinned){t.vx-=fx;t.vy-=fy;}
+  });
+  N.nodes.forEach(n=>{if(n.pinned)return;n.vx*=.72;n.vy*=.72;n.x+=n.vx;n.y+=n.vy;n.x=Math.max(n.sz,Math.min(N.W-n.sz,n.x));n.y=Math.max(n.sz,Math.min(N.H-n.sz,n.y));});
+}
+
+function draw(){
+  const {ctx,W,H,nodes,edges,zoom:{s,tx,ty},hover,showLabels,riskFilt}=N;
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(tx,ty);
+  ctx.scale(s,s);
+
+  edges.forEach(([si,ti])=>{
+    const sv=nodes[si],tv=nodes[ti];if(!sv||!tv)return;
+    const iHov=hover===si||hover===ti;
+    const cross=sv.cluster!==tv.cluster;
+    const alpha=riskFilt?(sv.risk===riskFilt||tv.risk===riskFilt?0.7:0.05):iHov?0.7:(cross?0.15:0.35);
     ctx.beginPath();
-    ctx.moveTo(nodes[a].x, nodes[a].y);
-    ctx.lineTo(nodes[b].x, nodes[b].y);
-    ctx.strokeStyle = nodes[a].cluster === nodes[b].cluster
-      ? 'rgba(255,255,255,0.07)'
-      : 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = nodes[a].cluster === nodes[b].cluster ? 1 : 0.5;
-    ctx.setLineDash(nodes[a].cluster !== nodes[b].cluster ? [3, 4] : []);
+    ctx.moveTo(sv.x,sv.y); ctx.lineTo(tv.x,tv.y);
+    ctx.strokeStyle=iHov?RCOL[sv.risk]:'rgba(0,0,0,0.15)';
+    ctx.lineWidth=iHov?1.5:(cross?0.4:0.8);
+    ctx.setLineDash(cross?[3,4]:[]);
+    ctx.globalAlpha=alpha;
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.setLineDash([]); ctx.globalAlpha=1;
   });
 
-  // Nodes
-  nodes.forEach(n => {
-    // glow
-    const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.5);
-    glow.addColorStop(0, n.color + '30');
-    glow.addColorStop(1, 'transparent');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, n.r * 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // node
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fillStyle = n.color + '25';
-    ctx.fill();
-    ctx.strokeStyle = n.color;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // label for larger nodes
-    if (n.r >= 12) {
-      ctx.fillStyle = 'rgba(200,214,229,0.7)';
-      ctx.font = `9px 'IBM Plex Mono'`;
-      ctx.textAlign = 'center';
-      ctx.fillText(n.label, n.x, n.y + n.r + 12);
+  nodes.forEach((n,i)=>{
+    const col=RCOL[n.risk]||'#aeaeb2';
+    const iHov=hover===i;
+    const filt=riskFilt&&n.risk!==riskFilt;
+    const r=n.sz+(iHov?3:0);
+    ctx.globalAlpha=filt?0.1:1;
+    const gr=r*(iHov?3.2:(2+Math.min(1.2,n.deg*.1)));
+    const g=ctx.createRadialGradient(n.x,n.y,r*.2,n.x,n.y,gr);
+    g.addColorStop(0,col+'22'); g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(n.x,n.y,gr,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=n.pinned?3:(iHov?2:1.5); ctx.stroke();
+    if(n.deg>4){const cr2=r*(.24+Math.min(.18,n.deg*.018));ctx.beginPath();ctx.arc(n.x,n.y,cr2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();}
+    if(n.pinned){ctx.beginPath();ctx.arc(n.x,n.y-r-5,2.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();}
+    if(showLabels&&!filt&&(r>=11||iHov)){
+      const lbl=n.label.length>18?n.label.slice(0,17)+'…':n.label;
+      ctx.font=`${iHov?10.5:9}px 'JetBrains Mono',monospace`;
+      ctx.textAlign='center';
+      const tw=ctx.measureText(lbl).width;
+      ctx.fillStyle='rgba(250,250,250,.9)';
+      ctx.fillRect(n.x-tw/2-3,n.y+r+2,tw+6,12);
+      ctx.fillStyle='#424245'; ctx.fillText(lbl,n.x,n.y+r+12);
     }
+    ctx.globalAlpha=1;
   });
-
-  // Legend
-  const legend = [
-    { color: '#ff3355', label: 'Cluster A — Bot Infrastructure' },
-    { color: '#ff6b35', label: 'Cluster B — Promo Network' },
-    { color: '#0094ff', label: 'Cluster C — Mirror Channels' },
-    { color: '#888', label: 'Bridge nodes' },
-  ];
-  ctx.font = `10px 'IBM Plex Mono'`;
-  legend.forEach((l, i) => {
-    ctx.fillStyle = l.color;
-    ctx.fillRect(W - 200, 16 + i * 20, 8, 8);
-    ctx.fillStyle = 'rgba(200,214,229,0.5)';
-    ctx.textAlign = 'left';
-    ctx.fillText(l.label, W - 186, 24 + i * 20);
-  });
+  ctx.restore();
 }
 
-// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
-function switchTab(panel, el) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('panel-' + panel).classList.add('active');
-  el.classList.add('active');
-  if (panel === 'network') {
-    setTimeout(drawNetwork, 50);
-  }
-}
+function cv(e){const r=N.canvas.getBoundingClientRect();return{x:(e.clientX-r.left-N.zoom.tx)/N.zoom.s,y:(e.clientY-r.top-N.zoom.ty)/N.zoom.s};}
+function nodeAt(x,y){let bi=null,bd=Infinity;N.nodes.forEach((n,i)=>{const d=Math.hypot(n.x-x,n.y-y);if(d<n.sz+6&&d<bd){bd=d;bi=i;}});return bi;}
+function mdown(e){const{x,y}=cv(e);const ni=nodeAt(x,y);N.drag={on:true,node:ni,sx:e.clientX,sy:e.clientY,ptx:N.zoom.tx,pty:N.zoom.ty};if(ni!==null){N.nodes[ni].pinned=true;N.alpha=Math.max(N.alpha,.3);N.running=true;}}
+function mmove(e){const r=N.canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const{x,y}=cv(e);if(N.drag.on){if(N.drag.node!==null){N.nodes[N.drag.node].x=x;N.nodes[N.drag.node].y=y;N.nodes[N.drag.node].vx=0;N.nodes[N.drag.node].vy=0;}else{N.zoom.tx=N.drag.ptx+(e.clientX-N.drag.sx);N.zoom.ty=N.drag.pty+(e.clientY-N.drag.sy);}}const hi=nodeAt(x,y);N.hover=hi;const tt=document.getElementById('ntt');if(hi!==null){const n=N.nodes[hi];tt.innerHTML=`<strong>${n.label}</strong><br>Risk: ${n.risk} · Connections: ${n.deg}${n.pinned?' · pinned':''}`;tt.style.left=(mx+14)+'px';tt.style.top=(my-8)+'px';tt.classList.add('vis');}else tt.classList.remove('vis');N.canvas.style.cursor=hi!==null?'pointer':(N.drag.on?'grabbing':'grab');if(!N.running)draw();}
+function mup(){N.drag.on=false;N.drag.node=null;}
+function mdbl(e){const{x,y}=cv(e);const ni=nodeAt(x,y);if(ni!==null){N.nodes[ni].pinned=!N.nodes[ni].pinned;N.alpha=.2;N.running=true;}}
+function mwheel(e){e.preventDefault();const r=N.canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const d=e.deltaY>0?.85:1.18;const ns=Math.min(4,Math.max(.25,N.zoom.s*d));N.zoom.tx=mx-(mx-N.zoom.tx)*(ns/N.zoom.s);N.zoom.ty=my-(my-N.zoom.ty)*(ns/N.zoom.s);N.zoom.s=ns;if(!N.running)draw();}
+function netRestart(){N.nodes=[];buildNodes();N.zoom={s:1,tx:0,ty:0};N.alpha=1;N.running=true;if(!N.frame)loop();}
+function netZoom(){N.zoom={s:1,tx:0,ty:0};if(!N.running)draw();}
+function toggleLabels(){N.showLabels=!N.showLabels;const b=document.getElementById('lblbtn');b.textContent=N.showLabels?'Labels On':'Labels Off';b.classList.toggle('on',N.showLabels);if(!N.running)draw();}
+function toggleRisk(r){N.riskFilt=N.riskFilt===r?null:r;document.getElementById('critbtn').classList.toggle('on',N.riskFilt===r);if(!N.running)draw();}
+function unpinAll(){N.nodes.forEach(n=>n.pinned=false);N.alpha=.5;N.running=true;}
 
-// Initial network draw on resize hint
-window.addEventListener('resize', () => {
-  if (document.getElementById('panel-network').classList.contains('active')) drawNetwork();
-});
+window.addEventListener('resize',()=>{if(document.getElementById('panel-network').classList.contains('active'))netInit();});
+
+document.addEventListener('DOMContentLoaded',()=>{ fetchAll(); });
 </script>
 </body>
 </html>
