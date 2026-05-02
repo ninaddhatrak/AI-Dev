@@ -25,7 +25,7 @@ Set `DATABASE_URL` if your Postgres instance differs from the default connection
 **Frontend** — serve the `frontend/` directory over HTTP, e.g.:
 
 ```bash
-cd frontend && python3 -m http.server 8080
+python3 -m http.server 8080 --directory frontend
 ```
 
 Then open `http://localhost:<frontend-port>` in your browser. The frontend expects the backend to be reachable at `http://localhost:8000` (configured in `frontend/api.js`).
