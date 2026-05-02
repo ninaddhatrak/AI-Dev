@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeTelegram Index — Investigative Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --border2: #253040;
+    --text: #c8d6e5;
+    --muted: #4a5a6b;
+    --accent: #00d4aa;
+    --accent2: #0094ff;
+    --warn: #ff6b35;
+    --danger: #ff3355;
+    --yellow: #ffd166;
+    --grid-line: rgba(30,39,48,0.8);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* NAV TABS */
+  .nav {
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .nav-tab {
+    padding: 12px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .nav-tab:hover { color: var(--text); }
+
+  .nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* LAYOUT */
+  .container {
+    padding: 20px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* STAT CARDS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.accent::before { background: var(--accent); }
+  .stat-card.blue::before { background: var(--accent2); }
+  .stat-card.warn::before { background: var(--warn); }
+  .stat-card.danger::before { background: var(--danger); }
+  .stat-card.yellow::before { background: var(--yellow); }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card.accent .stat-value { color: var(--accent); }
+  .stat-card.blue .stat-value { color: var(--accent2); }
+  .stat-card.warn .stat-value { color: var(--warn); }
+  .stat-card.danger .stat-value { color: var(--danger); }
+  .stat-card.yellow .stat-value { color: var(--yellow); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .stat-sub .up { color: var(--danger); }
+  .stat-sub .down { color: var(--accent); }
+
+  /* GRID LAYOUT */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .card-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+  }
+
+  .card-body { padding: 16px; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--grid-line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    vertical-align: middle;
+  }
+
+  .data-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .channel-name {
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  .risk-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .risk-critical { background: rgba(255,51,85,0.15); color: var(--danger); border: 1px solid rgba(255,51,85,0.3); }
+  .risk-high { background: rgba(255,107,53,0.15); color: var(--warn); border: 1px solid rgba(255,107,53,0.3); }
+  .risk-medium { background: rgba(255,209,102,0.15); color: var(--yellow); border: 1px solid rgba(255,209,102,0.3); }
+  .risk-low { background: rgba(0,212,170,0.15); color: var(--accent); border: 1px solid rgba(0,212,170,0.3); }
+
+  .subs-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border2);
+    max-width: 80px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--accent2);
+  }
+
+  /* KEYWORD TABLE */
+  .keyword-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grid-line);
+  }
+
+  .keyword-row:last-child { border-bottom: none; }
+
+  .keyword-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border: 1px solid var(--border2);
+  }
+
+  .keyword-freq {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .freq-bar-track {
+    width: 60px;
+    height: 3px;
+    background: var(--border2);
+  }
+
+  .freq-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  }
+
+  /* TIMELINE */
+  .timeline-event {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grid-line);
+  }
+  .timeline-event:last-child { border-bottom: none; }
+
+  .tl-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    width: 72px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .tl-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .tl-content {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .tl-title { color: var(--text); font-weight: 400; margin-bottom: 2px; }
+  .tl-sub { color: var(--muted); font-size: 11px; }
+
+  /* NETWORK GRAPH */
+  #networkCanvas {
+    width: 100%;
+    height: 320px;
+  }
+
+  /* SEARCH BAR */
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .search-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 8px 14px;
+    flex: 1;
+    outline: none;
+  }
+
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .filter-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 6px 12px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .filter-chip:hover, .filter-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,170,0.08);
+  }
+
+  /* CHART WRAPPERS */
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ALERT STRIP */
+  .alert-strip {
+    background: rgba(255,51,85,0.08);
+    border: 1px solid rgba(255,51,85,0.25);
+    border-left: 3px solid var(--danger);
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .alert-icon {
+    color: var(--danger);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* INSIGHT CARDS */
+  .insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .insight-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-left: 3px solid transparent;
+  }
+
+  .insight-card.type-growth { border-left-color: var(--danger); }
+  .insight-card.type-pattern { border-left-color: var(--accent2); }
+  .insight-card.type-keyword { border-left-color: var(--yellow); }
+
+  .insight-type {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .insight-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .insight-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* MINI FOOTER */
+  .footer-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-top: 24px;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    SAFETELEGRAM INDEX
+  </div>
+  <div class="topbar-meta">
+    <span><span class="status-dot"></span>LIVE MONITORING</span>
+    <span>DATASET: Jan–Jun 2024</span>
+    <span>CHANNELS: 184</span>
+    <span style="color: var(--accent2);">v0.4-alpha</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-tab active" onclick="switchTab('overview', this)">Overview</div>
+  <div class="nav-tab" onclick="switchTab('channels', this)">Channel Explorer</div>
+  <div class="nav-tab" onclick="switchTab('keywords', this)">Keyword Trends</div>
+  <div class="nav-tab" onclick="switchTab('network', this)">Network Map</div>
+</div>
+
+<!-- ===== OVERVIEW PANEL ===== -->
+<div id="panel-overview" class="panel active">
+<div class="container">
+
+  <div class="alert-strip">
+    <span class="alert-icon">⚠</span>
+    <span><strong>Surge detected:</strong> +340% new channel registrations in the last 72 hours. Likely coordinated bot network. 14 new channels flagged CRITICAL.</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent">
+      <div class="stat-label">Total Channels</div>
+      <div class="stat-value">184</div>
+      <div class="stat-sub"><span class="up">↑ 23</span> this month</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-label">Critical Risk</div>
+      <div class="stat-value">41</div>
+      <div class="stat-sub"><span class="up">↑ 14</span> new (72h)</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Total Subscribers</div>
+      <div class="stat-value">2.4M</div>
+      <div class="stat-sub"><span class="up">↑ 18%</span> MoM</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-label">Active Bots</div>
+      <div class="stat-value">27</div>
+      <div class="stat-sub">across 6 clusters</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">Unique Keywords</div>
+      <div class="stat-value">312</div>
+      <div class="stat-sub"><span class="up">+48</span> euphemisms</div>
+    </div>
+  </div>
+
+  <div class="section-label">Automated Insights</div>
+  <div class="insight-grid">
+    <div class="insight-card type-growth">
+      <div class="insight-type">Growth Signal</div>
+      <div class="insight-title">Ecosystem expanded 840% since Jan 2024</div>
+      <div class="insight-desc">Primary driver: viral promotion via short-form video platforms redirecting to t.me/ links.</div>
+    </div>
+    <div class="insight-card type-pattern">
+      <div class="insight-type">Migration Pattern</div>
+      <div class="insight-title">Post-ban migration takes avg. 4.2 days</div>
+      <div class="insight-desc">Banned channels reconstitute under new names within 1 week. 73% retain 60%+ of original subscribers.</div>
+    </div>
+    <div class="insight-card type-keyword">
+      <div class="insight-type">Language Drift</div>
+      <div class="insight-title">"Undress" replaced by "reveal" & "xray"</div>
+      <div class="insight-desc">Keyword evolution accelerating. New euphemisms appear every 8–12 days on average.</div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Ecosystem Growth Timeline</span>
+        <span class="card-badge">Jan–Jun 2024</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap">
+          <canvas id="growthChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Risk Distribution</span>
+        <span class="card-badge">184 channels</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap">
+          <canvas id="riskChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Key Events Timeline</span>
+        <span class="card-badge">Annotated</span>
+      </div>
+      <div class="card-body">
+        <div class="timeline-event">
+          <span class="tl-date">Jan 2024</span>
+          <div class="tl-dot" style="background:var(--danger)"></div>
+          <div class="tl-content">
+            <div class="tl-title">NudifyBot 3.0 launch</div>
+            <div class="tl-sub">+5 channels, +8k subscribers in first week</div>
+          </div>
+        </div>
+        <div class="timeline-event">
+          <span class="tl-date">Mar 2024</span>
+          <div class="tl-dot" style="background:var(--warn)"></div>
+          <div class="tl-content">
+            <div class="tl-title">Viral TikTok promotion wave</div>
+            <div class="tl-sub">+25 channels, +90k subscribers. 14 influencer accounts linked</div>
+          </div>
+        </div>
+        <div class="timeline-event">
+          <span class="tl-date">Apr 2024</span>
+          <div class="tl-dot" style="background:var(--accent2)"></div>
+          <div class="tl-content">
+            <div class="tl-title">Telegram policy update</div>
+            <div class="tl-sub">38 channels banned. Migration to new aliases begins within 96h</div>
+          </div>
+        </div>
+        <div class="timeline-event">
+          <span class="tl-date">May 2024</span>
+          <div class="tl-dot" style="background:var(--yellow)"></div>
+          <div class="tl-content">
+            <div class="tl-title">Language shift detected</div>
+            <div class="tl-sub">Keyword "nudify" drops 60%; "xray" & "reveal" surge</div>
+          </div>
+        </div>
+        <div class="timeline-event">
+          <span class="tl-date">Jun 2024</span>
+          <div class="tl-dot" style="background:var(--danger)"></div>
+          <div class="tl-content">
+            <div class="tl-title">New coordinated cluster identified</div>
+            <div class="tl-sub">14 channels, shared admin infrastructure, bot-driven growth</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Top Active Channels</span>
+        <span class="card-badge">by subscribers</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Channel</th>
+              <th>Subscribers</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="channel-name">@xray_reveal_pro</span></td>
+              <td><div class="subs-bar">342k <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div></div></td>
+              <td><span class="risk-badge risk-critical">Critical</span></td>
+            </tr>
+            <tr>
+              <td><span class="channel-name">@deepfake_tools_v2</span></td>
+              <td><div class="subs-bar">218k <div class="bar-track"><div class="bar-fill" style="width:63%"></div></div></div></td>
+              <td><span class="risk-badge risk-critical">Critical</span></td>
+            </tr>
+            <tr>
+              <td><span class="channel-name">@ai_cloth_remove</span></td>
+              <td><div class="subs-bar">187k <div class="bar-track"><div class="bar-fill" style="width:54%"></div></div></div></td>
+              <td><span class="risk-badge risk-critical">Critical</span></td>
+            </tr>
+            <tr>
+              <td><span class="channel-name">@undress_ai_bot</span></td>
+              <td><div class="subs-bar">124k <div class="bar-track"><div class="bar-fill" style="width:36%"></div></div></div></td>
+              <td><span class="risk-badge risk-high">High</span></td>
+            </tr>
+            <tr>
+              <td><span class="channel-name">@reveal_hd_free</span></td>
+              <td><div class="subs-bar">98k <div class="bar-track"><div class="bar-fill" style="width:28%"></div></div></div></td>
+              <td><span class="risk-badge risk-high">High</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ===== CHANNELS PANEL ===== -->
+<div id="panel-channels" class="panel">
+<div class="container">
+
+  <div class="search-row">
+    <input class="search-input" placeholder="Search channels, keywords, usernames…" type="text" id="searchInput" oninput="filterChannels()">
+    <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-chip" onclick="setFilter('critical', this)">Critical</button>
+    <button class="filter-chip" onclick="setFilter('high', this)">High</button>
+    <button class="filter-chip" onclick="setFilter('medium', this)">Medium</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Channel Database</span>
+      <span class="card-badge" id="channelCount">184 channels</span>
+    </div>
+    <div class="card-body" style="padding:0; overflow-x:auto;">
+      <table class="data-table" id="channelTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Channel</th>
+            <th>Category</th>
+            <th>Subscribers</th>
+            <th>Created</th>
+            <th>Last Active</th>
+            <th>Risk</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="channelTableBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ===== KEYWORDS PANEL ===== -->
+<div id="panel-keywords" class="panel">
+<div class="container">
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Keyword Frequency Evolution</span>
+        <span class="card-badge">TF-IDF weighted</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="keywordChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Euphemism Drift Map</span>
+        <span class="card-badge">language evolution</span>
+      </div>
+      <div class="card-body">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:2.2;color:var(--muted)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="color:var(--danger);font-size:13px">●</span>
+            <span style="color:var(--text)">nudify</span>
+            <span style="color:var(--muted);margin-left:4px">→</span>
+            <span style="color:var(--warn)">undress</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--yellow)">xray</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--accent)">reveal</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="color:var(--danger);font-size:13px">●</span>
+            <span style="color:var(--text)">deepnude</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--warn)">deep fake</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--accent)">ai swap</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="color:var(--danger);font-size:13px">●</span>
+            <span style="color:var(--text)">cloth remover</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--accent)">cloth reveal ai</span>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:var(--surface2);border:1px solid var(--border)">
+            <div style="color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">New terms detected (last 30d)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">invisible filter</span>
+              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">ai mirror</span>
+              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">true vision</span>
+              <span style="background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);padding:2px 8px">hd decode</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Top Keywords by Occurrence</span>
+      <span class="card-badge">312 tracked terms</span>
+    </div>
+    <div class="card-body">
+      <div id="keywordList"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ===== NETWORK PANEL ===== -->
+<div id="panel-network" class="panel">
+<div class="container">
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-header">
+      <span class="card-title">Channel Forward Network</span>
+      <span class="card-badge">NetworkX · 184 nodes · 423 edges</span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <canvas id="networkCanvas" width="1200" height="380"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Top Hub Channels</span>
+        <span class="card-badge">by connection degree</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="data-table">
+          <thead><tr><th>Channel</th><th>In-links</th><th>Out-links</th><th>Degree</th></tr></thead>
+          <tbody>
+            <tr><td><span class="channel-name">@xray_reveal_pro</span></td><td>34</td><td>18</td><td style="color:var(--danger)">52</td></tr>
+            <tr><td><span class="channel-name">@reveal_network_hub</span></td><td>28</td><td>22</td><td style="color:var(--danger)">50</td></tr>
+            <tr><td><span class="channel-name">@deepfake_tools_v2</span></td><td>19</td><td>21</td><td style="color:var(--warn)">40</td></tr>
+            <tr><td><span class="channel-name">@ai_cloth_remove</span></td><td>22</td><td>14</td><td style="color:var(--warn)">36</td></tr>
+            <tr><td><span class="channel-name">@undress_ai_bot</span></td><td>12</td><td>17</td><td style="color:var(--yellow)">29</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Cluster Analysis</span>
+        <span class="card-badge">6 clusters detected</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster A — Bot Infrastructure</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">38 channels · shared admin keys · bot-driven</div>
+            </div>
+            <span class="risk-badge risk-critical">Critical</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster B — Promo Network</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">52 channels · referral-based growth</div>
+            </div>
+            <span class="risk-badge risk-high">High</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border:1px solid var(--border)">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)">Cluster C — Mirror Channels</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">27 channels · post-ban migration group</div>
+            </div>
+            <span class="risk-badge risk-high">High</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-strip">
+  <span>SAFETELEGRAM INDEX · RESEARCH INFRASTRUCTURE · OPEN SOURCE</span>
+  <span>FOR USE BY JOURNALISTS · NGOs · ACADEMIC RESEARCHERS · DIGITAL SAFETY GROUPS</span>
+  <span>DATA DOES NOT LINK TO LIVE CHANNELS · METADATA ONLY</span>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : 'http://localhost:3000';
+
+// ─── DATA FETCHING ───────────────────────────────────────────────────────────
+let channelData = [];
+let keywordData = [];
+let statsData = { totalChannels: 0, criticalRisk: 0, totalSubscribers: 0, activeBots: 0, totalKeywords: 0 };
+
+async function fetchAllData() {
+  try {
+    // Fetch stats
+    const statsRes = await fetch(`${API_BASE}/api/stats`);
+    if (statsRes.ok) {
+      statsData = await statsRes.json();
+      updateStatsDisplay();
+    }
+    
+    // Fetch channels
+    const channelsRes = await fetch(`${API_BASE}/api/channels`);
+    if (channelsRes.ok) {
+      channelData = await channelsRes.json();
+      renderChannels(channelData);
+    }
+    
+    // Fetch keywords
+    const keywordsRes = await fetch(`${API_BASE}/api/keywords`);
+    if (keywordsRes.ok) {
+      keywordData = await keywordsRes.json();
+      renderKeywords(keywordData);
+    }
+    
+    console.log('✅ Data loaded from API');
+  } catch (err) {
+    console.error('❌ API fetch error:', err);
+    // Fallback to empty state - stats will show 0
+    renderChannels([]);
+    renderKeywords([]);
+  }
+}
+
+function updateStatsDisplay() {
+  // Update stat cards with live data
+  const formatNumber = (n) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return n.toString();
+  };
+  
+  const statElements = document.querySelectorAll('.stat-value');
+  if (statElements.length >= 5) {
+    statElements[0].textContent = statsData.totalChannels || 0;
+    statElements[1].textContent = statsData.criticalRisk || 0;
+    statElements[2].textContent = formatNumber(statsData.totalSubscribers || 0);
+    statElements[3].textContent = statsData.activeBots || 0;
+    statElements[4].textContent = statsData.totalKeywords || 0;
+  }
+  
+  // Update channel count in topbar
+  document.querySelectorAll('.topbar-meta span').forEach((span, i) => {
+    if (span.textContent.includes('CHANNELS:')) {
+      span.textContent = `CHANNELS: ${statsData.totalChannels || 0}`;
+    }
+  });
+}
+
+function renderChannels(data) {
+  const tbody = document.getElementById('channelTableBody');
+  const countEl = document.getElementById('channelCount');
+  if (countEl) countEl.textContent = (data.length || 0) + ' channels';
+  if (!tbody) return;
+  
+  tbody.innerHTML = data.map((c, i) => `
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><span class="channel-name">${c.name || 'Unknown'}</span></td>
+      <td style="color:var(--muted)">${c.category || 'Uncategorized'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace">${formatSubs(c.subs)}</td>
+      <td style="color:var(--muted)">${c.created || 'Unknown'}</td>
+      <td style="color:var(--muted)">${c.lastActive || 'Unknown'}</td>
+      <td><span class="risk-badge risk-${c.risk || 'medium'}">${c.risk || 'medium'}</span></td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${c.status==='Active'?'var(--accent)':'var(--danger)'}">${c.status || 'Unknown'}</td>
+    </tr>
+  `).join('');
+}
+
+function formatSubs(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
+  return n.toString();
+}
+
+function renderKeywords(data) {
+  const listEl = document.getElementById('keywordList');
+  if (!listEl) return;
+  
+  listEl.innerHTML = data.map(k => `
+    <div class="keyword-row">
+      <span class="keyword-tag">${k.term || 'Unknown'}</span>
+      <div class="keyword-freq">
+        <div class="freq-bar-track"><div class="freq-bar-fill" style="width:${k.pct || 0}%"></div></div>
+        ${(k.count || 0).toLocaleString()}
+      </div>
+    </div>
+  `).join('');
+}
+
+let currentFilter = 'all';
+
+function filterChannels() {
+  const q = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  let filtered = channelData;
+  if (currentFilter !== 'all') filtered = filtered.filter(c => c.risk === currentFilter);
+  if (q) filtered = filtered.filter(c => 
+    (c.name || '').toLowerCase().includes(q) || 
+    (c.category || '').toLowerCase().includes(q)
+  );
+  renderChannels(filtered);
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterChannels();
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', fetchAllData);
+
+// ─── KEYWORDS ────────────────────────────────────────────────────────────────
+// Keywords now loaded via API in fetchAllData()
+// Keeping placeholder for chart initialization
+const keywords = [];
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+const chartDefaults = {
+  color: 'rgba(200,214,229,0.7)',
+  font: { family: "'IBM Plex Mono'", size: 10 }
+};
+Chart.defaults.color = chartDefaults.color;
+Chart.defaults.font = chartDefaults.font;
+Chart.defaults.borderColor = '#1e2730';
+
+// Growth chart
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      {
+        label: 'New Channels',
+        data: [5, 12, 37, 8, 18, 31],
+        borderColor: '#ff3355',
+        backgroundColor: 'rgba(255,51,85,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        borderWidth: 1.5,
+      },
+      {
+        label: 'Subscribers (k)',
+        data: [8, 22, 112, 45, 90, 120],
+        borderColor: '#0094ff',
+        backgroundColor: 'rgba(0,148,255,0.06)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        borderWidth: 1.5,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { boxWidth: 8, padding: 12 } } },
+    scales: {
+      x: { grid: { color: '#1e2730' } },
+      y: { grid: { color: '#1e2730' }, beginAtZero: true }
+    }
+  }
+});
+
+// Risk donut
+new Chart(document.getElementById('riskChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Critical', 'High', 'Medium', 'Low'],
+    datasets: [{
+      data: [41, 68, 52, 23],
+      backgroundColor: ['rgba(255,51,85,0.8)', 'rgba(255,107,53,0.8)', 'rgba(255,209,102,0.8)', 'rgba(0,212,170,0.8)'],
+      borderColor: '#0a0c0f',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 12 } } },
+    cutout: '65%'
+  }
+});
+
+// Keyword trend chart
+new Chart(document.getElementById('keywordChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      { label: 'nudify', data: [980, 860, 620, 410, 280, 190], borderColor: '#ff3355', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
+      { label: 'undress', data: [340, 520, 740, 680, 590, 420], borderColor: '#ff6b35', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
+      { label: 'xray', data: [80, 210, 480, 720, 940, 1100], borderColor: '#0094ff', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
+      { label: 'reveal', data: [40, 120, 340, 680, 890, 980], borderColor: '#00d4aa', tension: 0.4, pointRadius: 2, borderWidth: 1.5 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { boxWidth: 8, padding: 10 } } },
+    scales: {
+      x: { grid: { color: '#1e2730' } },
+      y: { grid: { color: '#1e2730' }, beginAtZero: true }
+    }
+  }
+});
+
+// ─── NETWORK CANVAS ──────────────────────────────────────────────────────────
+function drawNetwork() {
+  const canvas = document.getElementById('networkCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+
+  // Seeded layout
+  const nodes = [
+    // Cluster A — bot infra (top-left)
+    { x: 160, y: 100, r: 22, color: '#ff3355', label: '@xray_reveal_pro', cluster: 'A' },
+    { x: 90, y: 170, r: 14, color: '#ff3355', label: '@reveal_net_hub', cluster: 'A' },
+    { x: 220, y: 160, r: 12, color: '#ff3355', label: '@bot_admin_2', cluster: 'A' },
+    { x: 130, y: 240, r: 10, color: '#ff3355', label: '@mirror_a1', cluster: 'A' },
+    { x: 200, y: 220, r: 9, color: '#ff3355', label: '@mirror_a2', cluster: 'A' },
+    { x: 70, y: 260, r: 8, color: '#ff6b35', label: '@promo_bot_a', cluster: 'A' },
+    // Cluster B — promo (center)
+    { x: 450, y: 80, r: 18, color: '#ff6b35', label: '@deepfake_tools_v2', cluster: 'B' },
+    { x: 380, y: 150, r: 13, color: '#ff6b35', label: '@ai_cloth_remove', cluster: 'B' },
+    { x: 510, y: 150, r: 11, color: '#ff6b35', label: '@promo_net_main', cluster: 'B' },
+    { x: 420, y: 230, r: 10, color: '#ffd166', label: '@undress_ai_bot', cluster: 'B' },
+    { x: 490, y: 220, r: 9, color: '#ffd166', label: '@reveal_hd_free', cluster: 'B' },
+    { x: 360, y: 280, r: 8, color: '#ffd166', label: '@sub_node_b1', cluster: 'B' },
+    { x: 550, y: 280, r: 8, color: '#ffd166', label: '@sub_node_b2', cluster: 'B' },
+    // Cluster C — mirror (right)
+    { x: 750, y: 100, r: 16, color: '#0094ff', label: '@ai_mirror_bot', cluster: 'C' },
+    { x: 820, y: 180, r: 12, color: '#0094ff', label: '@cloth_reveal_pro', cluster: 'C' },
+    { x: 680, y: 180, r: 11, color: '#0094ff', label: '@invisible_filter', cluster: 'C' },
+    { x: 760, y: 250, r: 9, color: '#00d4aa', label: '@hd_decode_beta', cluster: 'C' },
+    { x: 860, y: 260, r: 8, color: '#00d4aa', label: '@truevis_bot', cluster: 'C' },
+    { x: 650, y: 270, r: 8, color: '#00d4aa', label: '@sub_node_c1', cluster: 'C' },
+    // Cross-cluster bridges
+    { x: 300, y: 190, r: 7, color: '#888', label: '@bridge_1', cluster: 'X' },
+    { x: 620, y: 170, r: 7, color: '#888', label: '@bridge_2', cluster: 'X' },
+  ];
+
+  const edges = [
+    [0,1],[0,2],[0,3],[0,4],[1,3],[1,5],[2,4],
+    [6,7],[6,8],[6,9],[7,9],[8,10],[9,11],[10,12],
+    [13,14],[13,15],[13,16],[14,17],[15,18],[16,19],
+    [0,19],[6,19],[6,20],[13,20],[0,20],
+    [2,9],[7,15],[3,10]
+  ];
+
+  // Background glow blobs
+  const blobs = [
+    { x: 160, y: 170, r: 120, color: 'rgba(255,51,85,0.04)' },
+    { x: 450, y: 180, r: 150, color: 'rgba(255,107,53,0.04)' },
+    { x: 760, y: 190, r: 130, color: 'rgba(0,148,255,0.04)' },
+  ];
+  blobs.forEach(b => {
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    g.addColorStop(0, b.color);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Edges
+  edges.forEach(([a, b]) => {
+    ctx.beginPath();
+    ctx.moveTo(nodes[a].x, nodes[a].y);
+    ctx.lineTo(nodes[b].x, nodes[b].y);
+    ctx.strokeStyle = nodes[a].cluster === nodes[b].cluster
+      ? 'rgba(255,255,255,0.07)'
+      : 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = nodes[a].cluster === nodes[b].cluster ? 1 : 0.5;
+    ctx.setLineDash(nodes[a].cluster !== nodes[b].cluster ? [3, 4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    // glow
+    const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.5);
+    glow.addColorStop(0, n.color + '30');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // node
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = n.color + '25';
+    ctx.fill();
+    ctx.strokeStyle = n.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // label for larger nodes
+    if (n.r >= 12) {
+      ctx.fillStyle = 'rgba(200,214,229,0.7)';
+      ctx.font = `9px 'IBM Plex Mono'`;
+      ctx.textAlign = 'center';
+      ctx.fillText(n.label, n.x, n.y + n.r + 12);
+    }
+  });
+
+  // Legend
+  const legend = [
+    { color: '#ff3355', label: 'Cluster A — Bot Infrastructure' },
+    { color: '#ff6b35', label: 'Cluster B — Promo Network' },
+    { color: '#0094ff', label: 'Cluster C — Mirror Channels' },
+    { color: '#888', label: 'Bridge nodes' },
+  ];
+  ctx.font = `10px 'IBM Plex Mono'`;
+  legend.forEach((l, i) => {
+    ctx.fillStyle = l.color;
+    ctx.fillRect(W - 200, 16 + i * 20, 8, 8);
+    ctx.fillStyle = 'rgba(200,214,229,0.5)';
+    ctx.textAlign = 'left';
+    ctx.fillText(l.label, W - 186, 24 + i * 20);
+  });
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
+function switchTab(panel, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + panel).classList.add('active');
+  el.classList.add('active');
+  if (panel === 'network') {
+    setTimeout(drawNetwork, 50);
+  }
+}
+
+// Initial network draw on resize hint
+window.addEventListener('resize', () => {
+  if (document.getElementById('panel-network').classList.contains('active')) drawNetwork();
+});
+</script>
+</body>
+</html>
