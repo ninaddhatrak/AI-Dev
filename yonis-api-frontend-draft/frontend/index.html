@@ -9,22 +9,56 @@
 <body>
   <nav class="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">&#9888;</span>
-      <span class="logo-text">Harm Tracker</span>
+      <div class="logo-circle">
+        <img src="Group 71.svg" class="logo-icon" alt="SaTel" />
+      </div>
+      <span class="logo-text">SaTel</span>
     </div>
     <ul class="nav-links">
-      <li><a href="#overview"  class="nav-link active" data-view="overview">Overview</a></li>
-      <li><a href="#channels"  class="nav-link"        data-view="channels">Channels</a></li>
-      <li><a href="#network"   class="nav-link"        data-view="network">Network</a></li>
-      <li><a href="#messages"  class="nav-link"        data-view="messages">Messages</a></li>
+      <li><a href="#overview"  class="nav-link active" data-view="overview">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/>
+          <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/>
+          <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/>
+          <rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/>
+        </svg>
+        Overview
+      </a></li>
+      <li><a href="#channels"  class="nav-link" data-view="channels">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+          <rect x="1"   y="9" width="3" height="6" rx="1" fill="currentColor"/>
+          <rect x="6.5" y="5" width="3" height="10" rx="1" fill="currentColor"/>
+          <rect x="12"  y="2" width="3" height="13" rx="1" fill="currentColor"/>
+        </svg>
+        Channels
+      </a></li>
+      <li><a href="#network"   class="nav-link" data-view="network">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+          <line x1="8" y1="2.5" x2="2"  y2="13" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="8" y1="2.5" x2="14" y2="13" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="2" y1="13" x2="14" y2="13"  stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="8"  cy="2.5" r="2"   fill="currentColor"/>
+          <circle cx="2"  cy="13"  r="2"   fill="currentColor"/>
+          <circle cx="14" cy="13"  r="2"   fill="currentColor"/>
+        </svg>
+        Network
+      </a></li>
+      <li><a href="#messages"  class="nav-link" data-view="messages">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="2"  width="10" height="3" rx="1.5" fill="currentColor"/>
+          <rect x="5" y="7"  width="10" height="3" rx="1.5" fill="currentColor"/>
+          <rect x="1" y="12" width="7"  height="3" rx="1.5" fill="currentColor"/>
+        </svg>
+        Messages
+      </a></li>
     </ul>
   </nav>
 
   <main class="main-content">
-    <div id="view-overview"  class="view active"></div>
-    <div id="view-channels"  class="view"></div>
-    <div id="view-network"   class="view"></div>
-    <div id="view-messages"  class="view"></div>
+    <div id="view-overview"   class="view active"></div>
+    <div id="view-channels"   class="view"></div>
+    <div id="view-network"    class="view"></div>
+    <div id="view-messages"   class="view"></div>
   </main>
 
   <!-- D3 v7 from CDN -->

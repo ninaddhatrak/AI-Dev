@@ -12,6 +12,7 @@ const KW_RE = new RegExp(`(${KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g,"
 
 export async function renderMessageExplorer(container, { initialChannelId } = {}) {
   container.innerHTML = `
+    <div class="msg-glass-wrap">
     <div class="page-header">
       <h1>Message Explorer</h1>
       <p>Browse raw messages for any channel — keyword matches are highlighted</p>
@@ -19,8 +20,9 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
     <div class="msg-shell">
       <div class="channel-picker">
         <input class="search-input" id="msg-ch-search" placeholder="Filter channels…" style="width:100%" />
+        <div class="msg-section-label">Channels</div>
         <div class="channel-pick-list" id="ch-pick-list">
-          <div class="loading"><div class="loading-spinner"></div></div>
+          ${channelListSkeletonHtml()}
         </div>
       </div>
       <div class="msg-panel">
@@ -31,6 +33,7 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
           <div class="empty-state">No channel selected.</div>
         </div>
       </div>
+    </div>
     </div>
   `;
 
@@ -51,10 +54,9 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
 
   renderChannelList(allChannels);
 
-  // If navigated from another view
-  if (initialChannelId) {
-    selectChannel(initialChannelId);
-  }
+  // If navigated from another view, use that — otherwise auto-select most risky
+  const autoId = initialChannelId ?? topChannel(allChannels)?.channel_id;
+  if (autoId) selectChannel(autoId);
 
   // Search filter
   let timer;
@@ -107,13 +109,12 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
 
     // header
     const header = document.getElementById("msg-channel-header");
-    header.innerHTML = `<div class="loading"><div class="loading-spinner"></div></div>`;
+    header.innerHTML = msgHeaderSkeletonHtml();
 
     const msgWrap = document.getElementById("msg-list-wrap");
-    msgWrap.innerHTML = `<div class="loading"><div class="loading-spinner"></div>Loading messages…</div>`;
+    msgWrap.innerHTML = msgListSkeletonHtml();
 
-    let ch;
-    try {
+    let ch;    try {
       ch = await fetchChannel(id);
     } catch {
       header.innerHTML = `<p style="color:var(--muted)">Could not load channel details.</p>`;
@@ -138,7 +139,7 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
   async function loadMessages(id, append = false) {
     const msgWrap = document.getElementById("msg-list-wrap");
     if (!append) {
-      msgWrap.innerHTML = `<div class="loading"><div class="loading-spinner"></div>Loading messages…</div>`;
+      msgWrap.innerHTML = msgListSkeletonHtml();
     }
 
     let data;
@@ -204,6 +205,47 @@ export async function renderMessageExplorer(container, { initialChannelId } = {}
   }
 }
 
+function channelListSkeletonHtml() {
+  const rows = [
+    [130, 70], [100, 85], [150, 60], [115, 78],
+    [140, 90], [95,  65], [125, 82], [108, 74],
+  ];
+  return rows.map(([tw, mw]) => `
+    <div class="channel-pick-item">
+      <div class="skel" style="width:${tw}px;height:13px;margin-bottom:5px"></div>
+      <div class="skel" style="width:${mw}px;height:11px"></div>
+    </div>`).join("");
+}
+
+function msgHeaderSkeletonHtml() {
+  return `
+    <div class="skel" style="width:180px;height:20px;margin-bottom:10px"></div>
+    <div class="msg-header-meta">
+      <div class="skel" style="width:90px;height:16px;border-radius:8px"></div>
+      <div class="skel" style="width:56px;height:16px;border-radius:10px"></div>
+      <div class="skel" style="width:74px;height:16px"></div>
+    </div>`;
+}
+
+function msgListSkeletonHtml() {
+  const lines = [
+    [[100, 11], [280, 13], [220, 13], [160, 13]],
+    [[100, 11], [240, 13], [300, 13]],
+    [[100, 11], [200, 13], [260, 13], [180, 13]],
+    [[100, 11], [320, 13], [140, 13]],
+    [[100, 11], [260, 13], [200, 13], [240, 13]],
+  ];
+  return lines.map(msgLines => `
+    <div class="msg-item">
+      <div class="msg-meta" style="margin-bottom:8px">
+        <div class="skel" style="width:${msgLines[0][0]}px;height:${msgLines[0][1]}px"></div>
+      </div>
+      ${msgLines.slice(1).map(([w, h]) =>
+        `<div class="skel" style="width:${w}px;height:${h}px;margin-bottom:4px"></div>`
+      ).join("")}
+    </div>`).join("");
+}
+
 function parseFlags(flags) {
   if (!flags) return [];
   if (Array.isArray(flags)) return flags;
@@ -223,4 +265,14 @@ function formatFlag(f) {
 function esc(str) {
   if (!str) return "";
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+const RISK_RANK = { high: 0, medium: 1, low: 2, unclassified: 3 };
+
+function topChannel(channels) {
+  return [...channels].sort((a, b) => {
+    const rd = (RISK_RANK[a.risk_level] ?? 4) - (RISK_RANK[b.risk_level] ?? 4);
+    if (rd !== 0) return rd;
+    return (b.relevance_score ?? 0) - (a.relevance_score ?? 0);
+  })[0] ?? null;
 }

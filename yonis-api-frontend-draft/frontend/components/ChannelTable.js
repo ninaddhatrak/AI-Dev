@@ -73,8 +73,7 @@ export async function renderChannelTable(container, { onSelectChannel } = {}) {
   }
 
   async function load() {
-    container.querySelector("#ch-table-area").innerHTML =
-      `<div class="loading"><div class="loading-spinner"></div>Loading…</div>`;
+    container.querySelector("#ch-table-area").innerHTML = tableSkeletonHtml();
     try {
       const data = await fetchChannels({
         riskLevel: state.riskLevel,
@@ -112,12 +111,14 @@ export async function renderChannelTable(container, { onSelectChannel } = {}) {
 
   // Initial render
   container.innerHTML = `
+    <div class="ch-glass-wrap">
     <div class="page-header">
       <h1>Channels</h1>
-      <p>All ${PAGE_SIZE > 0 ? "" : ""}scraped channels — click a row to browse messages</p>
+      <p>All scraped channels — click a row to browse messages</p>
     </div>
     ${toolbar()}
-    <div id="ch-table-area"><div class="loading"><div class="loading-spinner"></div>Loading…</div></div>
+    <div id="ch-table-area">${tableSkeletonHtml()}</div>
+    </div>
   `;
 
   // Chip filter
@@ -142,6 +143,44 @@ export async function renderChannelTable(container, { onSelectChannel } = {}) {
   });
 
   await load();
+}
+
+function tableSkeletonHtml() {
+  const rows = [
+    [140, 88],  [110, 72],  [160, 96],  [125, 80],
+    [150, 68],  [105, 90],  [135, 76],  [120, 84],
+    [155, 70],  [115, 94],
+  ];
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th><th>Risk</th><th>Score</th>
+            <th>Members</th><th>Flags</th><th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(([tw, uw]) => `
+            <tr>
+              <td>
+                <div class="skel" style="width:${tw}px;height:13px;margin-bottom:5px"></div>
+                <div class="skel" style="width:${uw}px;height:11px"></div>
+              </td>
+              <td><div class="skel" style="width:62px;height:20px;border-radius:12px"></div></td>
+              <td><div class="skel" style="width:68px;height:13px"></div></td>
+              <td><div class="skel" style="width:48px;height:13px"></div></td>
+              <td><div class="skel" style="width:88px;height:13px"></div></td>
+              <td><div class="skel" style="width:72px;height:13px"></div></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <div class="skel" style="width:100px;height:13px"></div>
+      <div class="skel" style="width:64px;height:30px;border-radius:8px"></div>
+      <div class="skel" style="width:64px;height:30px;border-radius:8px"></div>
+    </div>`;
 }
 
 function parseFlags(flags) {

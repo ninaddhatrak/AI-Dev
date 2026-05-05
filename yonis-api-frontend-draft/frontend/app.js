@@ -1,7 +1,7 @@
-import { renderOverview }       from "./components/Overview.js";
-import { renderChannelTable }   from "./components/ChannelTable.js";
-import { renderNetworkGraph }   from "./components/NetworkGraph.js";
-import { renderMessageExplorer } from "./components/MessageExplorer.js";
+import { renderOverview }          from "./components/Overview.js";
+import { renderChannelTable }      from "./components/ChannelTable.js";
+import { renderNetworkGraphV1 }    from "./components/NetworkGraphV1.js";
+import { renderMessageExplorer }   from "./components/MessageExplorer.js";
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
@@ -20,7 +20,7 @@ const views = {
   },
   network: {
     el: null,
-    render: (el) => renderNetworkGraph(el, {
+    render: (el) => renderNetworkGraphV1(el, {
       onSelectChannel: (id) => navigateTo("messages", id),
     }),
   },
@@ -55,7 +55,7 @@ function navigateTo(viewName, channelId = null) {
   const container = views[viewName].el;
 
   // Re-render on each navigation so data stays fresh,
-  // except the network graph (expensive) — keep it if already rendered
+  // except the network graphs (expensive) — keep if already rendered
   if (viewName === "network" && container.dataset.rendered === "1" && !channelId) {
     return;
   }
