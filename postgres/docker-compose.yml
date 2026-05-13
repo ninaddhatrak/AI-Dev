@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: safetelegram-api
+    container_name: signalforge-api
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

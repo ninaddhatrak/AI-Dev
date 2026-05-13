@@ -1,4 +1,4 @@
-# SafeTelegram Dashboard
+# SignalForge Dashboard
 
 Investigative dashboard for tracking harmful Telegram channels, connected to a PostgreSQL database via a REST API.
 
@@ -6,7 +6,7 @@ Investigative dashboard for tracking harmful Telegram channels, connected to a P
 
 ```
 ┌─────────────────────────┐     ┌─────────────────────────┐     ┌──────────────────┐
-│  safetelegram-dashboard │ ──▶ │   Express API (Node.js) │ ──▶ │  PostgreSQL DB   │
+│  signalforge-dashboard │ ──▶ │   Express API (Node.js) │ ──▶ │  PostgreSQL DB   │
 │        (HTML/JS)         │     │      server.js:3000    │     │  harm_tracker   │
 └─────────────────────────┘     └─────────────────────────┘     └──────────────────┘
 ```
@@ -44,7 +44,7 @@ The API will start on `http://localhost:3000`.
 
 ### 3. Open the Dashboard
 
-Open `safetelegram-dashboard.html` in a web browser. The dashboard will automatically fetch data from the API.
+Open `signalforge-dashboard.html` in a web browser. The dashboard will automatically fetch data from the API.
 
 ## API Endpoints
 
@@ -53,7 +53,7 @@ Open `safetelegram-dashboard.html` in a web browser. The dashboard will automati
 | GET | `/api/stats` | Aggregate statistics |
 | GET | `/api/channels` | List all channels (supports `?risk=high&search=query`) |
 | GET | `/api/keywords` | Keyword frequency data |
-| GET | `/api/network` | Network graph nodes & edges |
+| GET | `/api/network` | Complete graph nodes + mention/forward edges from live PostgreSQL data |
 | GET | `/api/timeline` | Key events timeline |
 | GET | `/api/health` | Health check |
 
@@ -150,7 +150,7 @@ TGBot/
 ├── Dockerfile            # API container image
 ├── docker-compose.yml    # Docker orchestration
 ├── init.sql              # Database schema
-├── safetelegram-dashboard.html  # Dashboard UI
+├── signalforge-dashboard.html  # Dashboard UI
 └── pgdata/               # PostgreSQL data volume
 ```
 
