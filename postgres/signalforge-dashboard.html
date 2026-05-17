@@ -691,6 +691,10 @@ body {
 .kw-term { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); min-width: 80px; }
 .kw-cat  { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: var(--surface3); color: var(--muted); border: 1px solid var(--border); text-transform: uppercase; }
 .kw-lang { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: var(--faint); }
+.kw-source, .kw-new { font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 4px; border: 1px solid transparent; }
+.kw-source { background: rgba(96,165,250,.12); color: var(--blue); border-color: rgba(96,165,250,.25); }
+.kw-new { background: rgba(34,211,238,.12); color: var(--blue); border-color: rgba(56,189,248,.3); }
+.kw-meta { font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);white-space:nowrap; }
 .kw-freq { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .kw-bar-wrap { width: 72px; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
 .kw-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
@@ -1537,6 +1541,7 @@ const RBGA  = { critical:'rgba(255,77,90,.1)', high:'rgba(255,147,64,.1)', mediu
 const RORDER= { critical:0, high:1, medium:2, low:3, unclassified:4 };
 
 let channelData=[], actorData=[], keywordData=[], netAPIData=null, messageData=[];
+let messageDataTotal = 0, actorDataTotal = 0;
 let curFilter='all', actorFilter='all', sortCol='_idx', sortDir=1;
 let msgFilter='all';
 let focusedChannel=null;
@@ -1606,10 +1611,28 @@ async function fetchAll(){
     ]);
     if(sr.ok) applyStats(await sr.json());
     if(cr.ok){ channelData=await cr.json(); }
-    if(ar.ok){ actorData=await ar.json(); }
+    if(ar.ok){
+      const actorResponse = await ar.json();
+      if (actorResponse && Array.isArray(actorResponse.actors)) {
+        actorData = actorResponse.actors;
+        actorDataTotal = actorResponse.total || actorData.length;
+      } else {
+        actorData = actorResponse;
+        actorDataTotal = Array.isArray(actorData) ? actorData.length : 0;
+      }
+    }
     if(kr.ok){ keywordData=await kr.json(); }
     if(nr.ok){ netAPIData=await nr.json(); }
-    if(mr.ok){ messageData=await mr.json(); }
+    if(mr.ok){
+      const messageResponse = await mr.json();
+      if (messageResponse && Array.isArray(messageResponse.messages)) {
+        messageData = messageResponse.messages;
+        messageDataTotal = messageResponse.total || messageData.length;
+      } else {
+        messageData = messageResponse;
+        messageDataTotal = Array.isArray(messageData) ? messageData.length : 0;
+      }
+    }
     const tr=await fetch(`${API}/api/timeline`);
     if(tr.ok) renderTimeline(await tr.json());
   }catch(e){}
@@ -1837,7 +1860,8 @@ function renderTopChannels(){
 function renderActorStats(){
   const raw=actorData.length?actorData:SACTORS;
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('act-total',raw.length);
+  const total = actorDataTotal || raw.length;
+  set('act-total',fmtN(total));
   set('act-crit',raw.filter(a=>(a.risk_level||'').toLowerCase()==='critical').length);
   set('act-cross',raw.filter(a=>(+a.cross_channel_posts||0)>3).length);
   const freqs=raw.map(a=>+a.posting_frequency||0).filter(f=>f>0);
@@ -1950,7 +1974,8 @@ function clearFocus(){
 function updateMessageStats(){
   const data=messageData.length?messageData:SMSGS;
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('msg-total',data.length);
+  const total = messageDataTotal || data.length;
+  set('msg-total',fmtN(total));
   set('msg-flagged',data.filter(m=>m.flagged||(m.content_flags&&m.content_flags.length)).length);
   set('msg-forwarded',data.filter(m=>m.forwarded||m.is_forwarded).length);
   set('msg-media',data.filter(m=>m.media||m.has_media).length);
@@ -2137,6 +2162,8 @@ function renderKeywords(){
         <span class="kw-term">${esc(k.term||k.keyword||'?')}</span>
         ${k.category?`<span class="kw-cat">${esc(k.category)}</span>`:''}
         ${k.language&&k.language!=='en'?`<span class="kw-lang">${esc(k.language)}</span>`:''}
+        ${k.source?`<span class="kw-source">${esc(k.source)}</span>`:''}
+        ${k.is_new?`<span class="kw-new">new</span>`:''}
       </div>
       <div class="kw-meta">${frequency.toLocaleString()} msg${frequency===1?'':'s'} · ${channels.toLocaleString()} channel${channels===1?'':'s'}</div>
       <div class="kw-freq">
@@ -2152,36 +2179,34 @@ function renderKeywords(){
 function parseDateValue(value){if(!value) return null;const d=new Date(value);return isNaN(d)?null:d;}
 function exportAll(){exportChannels();}
 function exportChannels(){
-  const raw=channelData.length?channelData:SCHAN;
-  const q=(document.getElementById('si')?.value||'').toLowerCase();
-  const catFilter=(document.getElementById('export-ch-category')?.value||'').toLowerCase();
-  const startDate=parseDateValue(document.getElementById('export-ch-start')?.value);
-  const endDate=parseDateValue(document.getElementById('export-ch-end')?.value);
-  let rows=raw.map((c,i)=>({...c,_idx:i}));
-  if(curFilter!=='all') rows=rows.filter(c=>(c.risk||'').toLowerCase()===curFilter);
-  if(q) rows=rows.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.category||'').toLowerCase().includes(q));
-  if(catFilter) rows=rows.filter(c=>(c.name||'').toLowerCase().includes(catFilter)||(c.category||'').toLowerCase().includes(catFilter));
-  if(startDate||endDate) rows=rows.filter(c=>{const d=parseDateValue(c.created);if(!d) return false;if(startDate&&d<startDate) return false;if(endDate&&d>endDate) return false;return true;});
-  const csv=['Index,Channel,Category,Subscribers,Discovered,Last Active,Risk,Status,Dataset,Relevance,Dead End'];
-  csv.push(...rows.map(c=>`${c._idx},${c.name},${c.category},${c.subs},${c.created},${c.lastActive},${c.risk},${c.status},${c.dataset||''},${c.relevance_score||''},${c.is_dead_end||false}`));
-  downloadCSV(csv.join('\n'),`SignalForge_Channels_${new Date().toISOString().split('T')[0]}.csv`);
+  const risk = curFilter;
+  const search = document.getElementById('si')?.value || '';
+  const category = document.getElementById('export-ch-category')?.value || '';
+  const start = document.getElementById('export-ch-start')?.value || '';
+  const end = document.getElementById('export-ch-end')?.value || '';
+  
+  const params = new URLSearchParams();
+  if (risk && risk !== 'all') params.append('risk', risk);
+  if (search) params.append('search', search);
+  if (category) params.append('category', category);
+  if (start) params.append('start', start);
+  if (end) params.append('end', end);
+  
+  window.open(`${API}/api/export/channels?${params.toString()}`, '_blank');
 }
 function exportMessages(){
-  const data=messageData.length?messageData:SMSGS;
-  const q=(document.getElementById('msg-search')?.value||'').toLowerCase();
-  const channelFilter=(document.getElementById('export-msg-channel')?.value||'').toLowerCase();
-  const startDate=parseDateValue(document.getElementById('export-msg-start')?.value);
-  const endDate=parseDateValue(document.getElementById('export-msg-end')?.value);
-  let rows=data.slice();
-  if(msgFilter==='flagged') rows=rows.filter(m=>m.flagged);
-  else if(msgFilter==='forwarded') rows=rows.filter(m=>m.forwarded||m.is_forwarded);
-  else if(msgFilter==='media') rows=rows.filter(m=>m.media||m.has_media);
-  if(q) rows=rows.filter(m=>(m.text||'').toLowerCase().includes(q)||(m.channel||'').toLowerCase().includes(q));
-  if(channelFilter) rows=rows.filter(m=>(m.channel||m.channel_id||'').toLowerCase().includes(channelFilter));
-  if(startDate||endDate) rows=rows.filter(m=>{const d=parseDateValue(m.timestamp||m.date||m.time);if(!d) return false;if(startDate&&d<startDate) return false;if(endDate&&d>endDate) return false;return true;});
-  const csv=['Channel,Message,Timestamp,Risk,Flagged,Forwarded,Has Media,Media Type,Embedded,Processed,Keyword Matches,Dataset'];
-  csv.push(...rows.map(m=>`"${(m.channel||m.channel_id||'').replace(/"/g,'""')}","${(m.text||'').replace(/"/g,'""')}",${m.timestamp||m.time||''},${m.risk||''},${m.flagged?'Yes':'No'},${(m.forwarded||m.is_forwarded)?'Yes':'No'},${(m.media||m.has_media)?'Yes':'No'},${m.media_type||''},${m.is_embedded?'Yes':'No'},${m.is_processed?'Yes':'No'},"${(parseArr(m.keyword_matches)||[]).join(';')}",${m.dataset||''}`));
-  downloadCSV(csv.join('\n'),`SignalForge_Messages_${new Date().toISOString().split('T')[0]}.csv`);
+  const channel = document.getElementById('msg-search')?.value || document.getElementById('export-msg-channel')?.value || '';
+  const start = document.getElementById('export-msg-start')?.value || '';
+  const end = document.getElementById('export-msg-end')?.value || '';
+  const flagged = msgFilter === 'flagged';
+  
+  const params = new URLSearchParams();
+  if (channel) params.append('channel', channel);
+  if (start) params.append('start', start);
+  if (end) params.append('end', end);
+  if (flagged) params.append('flagged', 'true');
+  
+  window.open(`${API}/api/export/messages?${params.toString()}`, '_blank');
 }
 function downloadCSV(csv,filename){
   const blob=new Blob([csv],{type:'text/csv'});

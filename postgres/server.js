@@ -12,7 +12,7 @@ app.use(express.json());
 // Database connection
 const pool = new Pool({
   host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'postgres' : 'localhost'),
-  port: process.env.DB_PORT || 5433,
+  port: process.env.DB_PORT || 5434,
   database: process.env.DB_NAME || 'harm_tracker',
   user: process.env.DB_USER || 'tracker',
   password: process.env.DB_PASSWORD || 'tracker_pw',
@@ -97,7 +97,7 @@ app.get('/api/stats', async (req, res) => {
 app.get('/api/channels', async (req, res) => {
   try {
     const { risk, search, limit = 100, offset = 0 } = req.query;
-    
+
     let query = `
       SELECT 
         channel_id,
@@ -131,7 +131,7 @@ app.get('/api/channels', async (req, res) => {
     params.push(parseInt(limit), parseInt(offset));
 
     const result = await pool.query(query, params);
-    
+
     // Transform to match dashboard expected format
     const channels = result.rows.map(c => ({
       name: c.username || `@${c.channel_id}`,
@@ -170,19 +170,22 @@ app.get('/api/keywords', async (req, res) => {
       LIMIT 50
     `);
 
-    const maxScore = Math.max(...result.rows.map(r => r.score || 0), 1);
-    const keywords = result.rows.map(k => ({
-      term: k.keyword,
-      category: k.category || 'Other',
-      language: k.language || 'en',
-      count: k.messages_matched || 0,
-      channels_discovered: k.channels_discovered || 0,
-      score: Number((k.score || 0).toFixed(2)),
-      pct: maxScore > 0 ? Math.round((k.score / maxScore) * 100) : 0,
-      is_new: k.is_new || false,
-      added_at: k.added_at,
-      source: k.source || 'manual'
-    }));
+    const maxScore = Math.max(...result.rows.map(r => Number(r.score) || 0), 1);
+    const keywords = result.rows.map(k => {
+      const scoreValue = Number(k.score) || 0;
+      return {
+        term: k.keyword,
+        category: k.category || 'Other',
+        language: k.language || 'en',
+        count: k.messages_matched || 0,
+        channels_discovered: k.channels_discovered || 0,
+        score: Number(scoreValue.toFixed(2)),
+        pct: maxScore > 0 ? Math.round((scoreValue / maxScore) * 100) : 0,
+        is_new: k.is_new || false,
+        added_at: k.added_at,
+        source: k.source || 'manual'
+      };
+    });
 
     res.json(keywords);
   } catch (err) {
@@ -282,7 +285,11 @@ app.get('/api/network', async (req, res) => {
 // GET /api/actors - List all actors with stats
 app.get('/api/actors', async (req, res) => {
   try {
-    const result = await pool.query(`
+    const { limit, offset = 0 } = req.query;
+    const countResult = await pool.query(`SELECT COUNT(*) AS total_actors FROM actors`);
+    const totalActors = parseInt(countResult.rows[0].total_actors, 10) || 0;
+
+    let query = `
       SELECT 
         actor_id,
         channels_active_in,
@@ -299,8 +306,16 @@ app.get('/api/actors', async (req, res) => {
         dataset
       FROM actors
       ORDER BY message_count DESC
-    `);
-    res.json(result.rows);
+    `;
+    const params = [];
+    if (limit) {
+      params.push(parseInt(limit));
+      params.push(parseInt(offset));
+      query += ` LIMIT $1 OFFSET $2`;
+    }
+
+    const result = await pool.query(query, params);
+    res.json({ total: totalActors, actors: result.rows });
   } catch (err) {
     console.error('Error fetching actors:', err);
     res.status(500).json({ error: 'Failed to fetch actors' });
@@ -311,7 +326,9 @@ app.get('/api/actors', async (req, res) => {
 app.get('/api/messages', async (req, res) => {
   try {
     const { limit = 20000, offset = 0 } = req.query;
-    
+    const countResult = await pool.query(`SELECT COUNT(*) AS total_messages FROM messages`);
+    const totalMessages = parseInt(countResult.rows[0].total_messages, 10) || 0;
+
     const result = await pool.query(`
       SELECT 
         m.text,
@@ -327,7 +344,7 @@ app.get('/api/messages', async (req, res) => {
       ORDER BY m.timestamp DESC
       LIMIT $1 OFFSET $2
     `, [parseInt(limit), parseInt(offset)]);
-    
+
     const messages = result.rows.map(m => ({
       channel: m.username ? `@${m.username}` : `@${m.channel_id}`,
       text: m.text || '',
@@ -338,8 +355,8 @@ app.get('/api/messages', async (req, res) => {
       forwarded: m.is_forwarded,
       media: m.has_media
     }));
-    
-    res.json(messages);
+
+    res.json({ total: totalMessages, messages });
   } catch (err) {
     console.error('Messages error:', err.message);
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -366,8 +383,8 @@ app.get('/api/timeline', async (req, res) => {
       date: r.discovered_at,
       title: r.title,
       description: `${r.channel_type} channel discovered`,
-      type: r.risk_level?.toLowerCase() === 'critical' ? 'danger' : 
-            r.risk_level?.toLowerCase() === 'high' ? 'warn' : 'info'
+      type: r.risk_level?.toLowerCase() === 'critical' ? 'danger' :
+        r.risk_level?.toLowerCase() === 'high' ? 'warn' : 'info'
     }));
 
     res.json(timeline);
@@ -377,10 +394,141 @@ app.get('/api/timeline', async (req, res) => {
   }
 });
 
+// GET /api/export/channels - Export full channel list as CSV
+app.get('/api/export/channels', async (req, res) => {
+  try {
+    const { risk, search, category, start, end } = req.query;
+    let query = `
+      SELECT 
+        channel_id, username, title, channel_type, member_count, 
+        discovered_at, last_activity, risk_level, is_active 
+      FROM channels 
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (risk && risk !== 'all') {
+      query += ` AND risk_level = $${paramIndex++}`;
+      params.push(risk);
+    }
+    if (search) {
+      query += ` AND (title ILIKE $${paramIndex} OR username ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+    if (category) {
+      query += ` AND (channel_type ILIKE $${paramIndex} OR title ILIKE $${paramIndex})`;
+      params.push(`%${category}%`);
+      paramIndex++;
+    }
+    if (start) {
+      query += ` AND discovered_at >= $${paramIndex++}`;
+      params.push(start);
+    }
+    if (end) {
+      query += ` AND discovered_at <= $${paramIndex++}`;
+      params.push(end);
+    }
+
+    query += ` ORDER BY member_count DESC`;
+    const result = await pool.query(query, params);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="signalforge_channels_${new Date().toISOString().split('T')[0]}.csv"`);
+
+    let csv = 'Channel ID,Username,Title,Type,Subscribers,Discovered,Last Activity,Risk,Status\n';
+    for (const r of result.rows) {
+      csv += [
+        csvEscape(r.channel_id),
+        csvEscape(r.username),
+        csvEscape(r.title),
+        csvEscape(r.channel_type),
+        csvEscape(r.member_count),
+        csvEscape(r.discovered_at ? r.discovered_at.toISOString() : ''),
+        csvEscape(r.last_activity ? r.last_activity.toISOString() : ''),
+        csvEscape(r.risk_level),
+        r.is_active ? 'Active' : 'Banned'
+      ].join(',') + '\n';
+    }
+    res.send(csv);
+  } catch (err) {
+    console.error('Export channels error:', err.message);
+    res.status(500).json({ error: 'Failed to export channels' });
+  }
+});
+
+// GET /api/export/messages - Export full message list as CSV
+app.get('/api/export/messages', async (req, res) => {
+  try {
+    const { channel, start, end, flagged } = req.query;
+    let query = `
+      SELECT 
+        m.text, m.timestamp, m.is_forwarded, m.has_media, 
+        c.username, c.channel_id, c.risk_level, m.content_flags
+      FROM messages m
+      JOIN channels c ON m.channel_id = c.channel_id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (channel) {
+      query += ` AND (c.username ILIKE $${paramIndex} OR c.channel_id ILIKE $${paramIndex})`;
+      params.push(`%${channel}%`);
+      paramIndex++;
+    }
+    if (start) {
+      query += ` AND m.timestamp >= $${paramIndex++}`;
+      params.push(start);
+    }
+    if (end) {
+      query += ` AND m.timestamp <= $${paramIndex++}`;
+      params.push(end);
+    }
+    if (flagged === 'true') {
+      query += ` AND (jsonb_array_length(m.content_flags) > 0 OR m.content_flags IS NOT NULL)`;
+    }
+
+    query += ` ORDER BY m.timestamp DESC`;
+    const result = await pool.query(query, params);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="signalforge_messages_${new Date().toISOString().split('T')[0]}.csv"`);
+
+    let csv = 'Channel,Text,Timestamp,Risk,Forwarded,Media,Flags\n';
+    for (const r of result.rows) {
+      const flags = Array.isArray(r.content_flags) ? r.content_flags.join('; ') : '';
+      csv += [
+        csvEscape(r.username || r.channel_id),
+        csvEscape(r.text),
+        csvEscape(r.timestamp ? r.timestamp.toISOString() : ''),
+        csvEscape(r.risk_level),
+        r.is_forwarded ? 'Yes' : 'No',
+        r.has_media ? 'Yes' : 'No',
+        csvEscape(flags)
+      ].join(',') + '\n';
+    }
+    res.send(csv);
+  } catch (err) {
+    console.error('Export messages error:', err.message);
+    res.status(500).json({ error: 'Failed to export messages' });
+  }
+});
+
 // GET /api/health - Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+function csvEscape(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
 
 // ============ HELPER FUNCTIONS ============
 
