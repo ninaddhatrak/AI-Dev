@@ -17,7 +17,7 @@ Visualization frontend and FastAPI backend for the Harm Tracker Telegram monitor
 **Backend** — from this directory:
 
 ```bash
-uvicorn server:app --port 8000
+uvicorn server:app --port 8888
 ```
 
 Set `DATABASE_URL` if your Postgres instance differs from the default connection string in `server.py`.
@@ -28,7 +28,7 @@ Set `DATABASE_URL` if your Postgres instance differs from the default connection
 python3 -m http.server 8080 --directory frontend
 ```
 
-Then open `http://localhost:<frontend-port>` in your browser. The frontend expects the backend to be reachable at `http://localhost:8000` (configured in `frontend/api.js`).
+Then open `http://localhost:<frontend-port>` in your browser. The frontend expects the backend to be reachable at `http://localhost:8080` (configured in `frontend/api.js`).
 
 ## API Endpoints
 

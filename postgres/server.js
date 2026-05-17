@@ -96,7 +96,7 @@ app.get('/api/stats', async (req, res) => {
 // GET /api/channels - List all channels with optional filtering
 app.get('/api/channels', async (req, res) => {
   try {
-    const { risk, search, limit = 100, offset = 0 } = req.query;
+    const { risk, search, limit = 10000, offset = 0 } = req.query;
     
     let query = `
       SELECT 
@@ -132,6 +132,20 @@ app.get('/api/channels', async (req, res) => {
 
     const result = await pool.query(query, params);
     
+    // Get total count for pagination metadata
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM channels
+      WHERE 1=1
+      ${risk && risk !== 'all' ? ` AND risk_level = $1` : ''}
+      ${search ? ` AND (title ILIKE $${risk && risk !== 'all' ? 2 : 1} OR username ILIKE $${risk && risk !== 'all' ? 2 : 1})` : ''}
+    `;
+    const countParams = [];
+    if (risk && risk !== 'all') countParams.push(risk);
+    if (search) countParams.push(`%${search}%`);
+    const countResult = await pool.query(countQuery, countParams);
+    const totalChannels = parseInt(countResult.rows[0].total) || 0;
+
     // Transform to match dashboard expected format
     const channels = result.rows.map(c => ({
       name: c.username || `@${c.channel_id}`,
@@ -140,10 +154,18 @@ app.get('/api/channels', async (req, res) => {
       created: c.discovered_at ? new Date(c.discovered_at).toLocaleString('en-US', { month: 'short', year: 'numeric' }) : 'Unknown',
       lastActive: c.last_activity ? getTimeAgo(c.last_activity) : 'Unknown',
       risk: c.risk_level?.toLowerCase() || 'medium',
-      status: c.is_active ? 'Active' : 'Banned'
+      status: c.is_active ? 'Active' : 'Banned',
+      channel_id: c.channel_id,
+      member_count: c.member_count
     }));
 
-    res.json(channels);
+    res.json({
+      channels,
+      total: totalChannels,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      hasMore: parseInt(offset) + parseInt(limit) < totalChannels
+    });
   } catch (err) {
     console.error('Channels error:', err.message);
     res.status(500).json({ error: 'Failed to fetch channels' });
@@ -374,6 +396,108 @@ app.get('/api/timeline', async (req, res) => {
   } catch (err) {
     console.error('Timeline error:', err.message);
     res.status(500).json({ error: 'Failed to fetch timeline' });
+  }
+});
+
+// GET /api/charts-data - Aggregated data for dashboard charts
+app.get('/api/charts-data', async (req, res) => {
+  try {
+    const chartsData = {};
+
+    // Risk distribution
+    const riskResult = await pool.query(`
+      SELECT risk_level, COUNT(*) as count
+      FROM channels
+      GROUP BY risk_level
+      ORDER BY risk_level
+    `);
+    chartsData.riskDistribution = riskResult.rows.map(r => ({
+      label: r.risk_level || 'unclassified',
+      value: parseInt(r.count) || 0
+    }));
+
+    // Channel type distribution
+    const typeResult = await pool.query(`
+      SELECT channel_type, COUNT(*) as count, SUM(member_count) as total_subs
+      FROM channels
+      GROUP BY channel_type
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    chartsData.channelTypes = typeResult.rows.map(r => ({
+      label: r.channel_type || 'Unknown',
+      count: parseInt(r.count) || 0,
+      subscribers: parseInt(r.total_subs) || 0
+    }));
+
+    // Top channels by subscribers
+    const topResult = await pool.query(`
+      SELECT username, member_count, risk_level, channel_type
+      FROM channels
+      WHERE member_count > 0
+      ORDER BY member_count DESC
+      LIMIT 15
+    `);
+    chartsData.topChannels = topResult.rows.map(r => ({
+      name: r.username || `Channel`,
+      subscribers: parseInt(r.member_count) || 0,
+      risk: r.risk_level?.toLowerCase() || 'unclassified',
+      type: r.channel_type || 'Unknown'
+    }));
+
+    // Activity trend by day (last 30 days)
+    const activityResult = await pool.query(`
+      SELECT 
+        DATE(last_activity) as date,
+        COUNT(*) as channels_active
+      FROM channels
+      WHERE last_activity >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(last_activity)
+      ORDER BY date
+    `);
+    chartsData.activityTrend = activityResult.rows.map(r => ({
+      date: r.date,
+      channels: parseInt(r.channels_active) || 0
+    }));
+
+    // Content flags frequency
+    const flagsResult = await pool.query(`
+      SELECT flag, COUNT(*) as count
+      FROM channels, jsonb_array_elements_text(content_flags) AS flag
+      GROUP BY flag
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    chartsData.contentFlags = flagsResult.rows.map(r => ({
+      flag: r.flag,
+      count: parseInt(r.count) || 0
+    }));
+
+    // Member count distribution (histogram)
+    const membersResult = await pool.query(`
+      SELECT 
+        CASE 
+          WHEN member_count < 100 THEN '0-100'
+          WHEN member_count < 500 THEN '100-500'
+          WHEN member_count < 1000 THEN '500-1K'
+          WHEN member_count < 5000 THEN '1K-5K'
+          WHEN member_count < 10000 THEN '5K-10K'
+          ELSE '10K+'
+        END as size_range,
+        COUNT(*) as count
+      FROM channels
+      GROUP BY size_range
+      ORDER BY size_range
+    `);
+    chartsData.memberDistribution = membersResult.rows.map(r => ({
+      range: r.size_range,
+      count: parseInt(r.count) || 0
+    }));
+
+    res.json(chartsData);
+  } catch (err) {
+    console.error('Charts data error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch charts data' });
   }
 });
 

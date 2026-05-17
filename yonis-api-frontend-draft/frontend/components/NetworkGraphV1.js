@@ -39,13 +39,14 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
         <!-- Status badge — bottom-left -->
         <div id="v1-status" class="glass-badge v1-status-badge">Loading…</div>
 
-        <!-- Legend + filter — top-right glass panel -->
+        <!-- Legend + filters — top-right glass panel -->
         <div class="glass-panel v1-panel-right">
+
           <div class="glass-panel-title">Risk Level</div>
           ${Object.entries(RISK_COLOR).map(([k, c]) => `
             <div class="legend-row">
               <span class="legend-circle" style="background:${c}"></span>
-              <span>${k.charAt(0).toUpperCase() + k.slice(1)}</span>
+              <span>${cap(k)}</span>
             </div>`).join("")}
           <div class="legend-row">
             <span class="legend-circle" style="background:transparent;border:2px solid ${RECENT_COLOR}"></span>
@@ -57,20 +58,61 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
           ${Object.entries(EDGE_COLOR).map(([k, c]) => `
             <div class="legend-row">
               <span class="legend-circle" style="background:${c};border-radius:2px"></span>
-              <span>${k.charAt(0).toUpperCase() + k.slice(1)}</span>
+              <span>${cap(k)}</span>
             </div>`).join("")}
 
           <div class="glass-sep"></div>
-          <div class="glass-panel-title">Filter</div>
+          <div class="glass-panel-title">Risk Filter</div>
           ${Object.entries(RISK_COLOR).map(([k]) => `
             <label class="glass-check">
               <input type="checkbox" class="v1-risk-toggle" data-risk="${k}" checked />
-              ${k.charAt(0).toUpperCase() + k.slice(1)}
+              ${cap(k)}
             </label>`).join("")}
           <label class="glass-check" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.07)">
             <input type="checkbox" id="v1-recent-only" />
             <span style="color:${RECENT_COLOR}">Recent only</span>
           </label>
+
+          <div class="glass-sep"></div>
+          <div class="glass-panel-title">Highlight Edges</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${Object.entries(EDGE_COLOR).map(([k, c]) => `
+              <button
+                class="v1-edge-highlight-btn"
+                data-edge-type="${k}"
+                style="
+                  background:rgba(0,0,0,0);
+                  border:1px solid ${c}44;
+                  border-radius:6px;
+                  color:${c};
+                  font-size:11px;
+                  padding:4px 8px;
+                  cursor:pointer;
+                  text-align:left;
+                  display:flex;
+                  align-items:center;
+                  gap:6px;
+                  transition:background .15s,border-color .15s;
+                "
+              >
+                <span style="width:8px;height:8px;border-radius:2px;background:${c};flex-shrink:0"></span>
+                ${cap(k)}
+              </button>`).join("")}
+            <button
+              id="v1-edge-reset"
+              style="
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(255,255,255,0.1);
+                border-radius:6px;
+                color:var(--muted,#6b7290);
+                font-size:10px;
+                padding:3px 8px;
+                cursor:pointer;
+                margin-top:2px;
+                transition:background .15s;
+              "
+            >Reset highlight</button>
+          </div>
 
           <div class="glass-sep"></div>
           <div class="glass-panel-title">Min edge weight: <span id="v1-weight-label">1</span></div>
@@ -82,7 +124,10 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
         <div class="glass-panel v1-panel-info" id="v1-node-info" style="display:none">
           <div class="glass-panel-title">Selected Node</div>
           <div id="v1-node-info-body"></div>
-          <button class="glass-btn" id="v1-messages-btn" style="margin-top:10px;width:100%;font-size:12px;padding:6px 10px">Browse Messages</button>
+          <button class="glass-btn" id="v1-messages-btn"
+            style="margin-top:10px;width:100%;font-size:12px;padding:6px 10px">
+            Browse Messages
+          </button>
         </div>
 
       </div>
@@ -90,14 +135,14 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
   `;
 
   // ── Canvas setup ─────────────────────────────────────────────────────────
-  const wrap   = document.getElementById("v1-wrap");
-  const canvas = document.getElementById("v1-canvas");
+  const wrap    = document.getElementById("v1-wrap");
+  const canvas  = document.getElementById("v1-canvas");
   const tooltip = document.getElementById("v1-tooltip");
   const statusEl = document.getElementById("v1-status");
 
   const dpr = window.devicePixelRatio || 1;
-  const W = wrap.clientWidth;
-  const H = wrap.clientHeight;
+  const W   = wrap.clientWidth;
+  const H   = wrap.clientHeight;
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   const ctx = canvas.getContext("2d");
@@ -116,7 +161,7 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
   const { nodes, edges } = graphData;
 
   // ── Build sim data ────────────────────────────────────────────────────────
-  const nodeById = new Map(nodes.map(n => [n.channel_id, n]));
+  const nodeById   = new Map(nodes.map(n => [n.channel_id, n]));
   const validEdges = edges.filter(e =>
     nodeById.has(e.source_channel_id) && nodeById.has(e.target_channel_id)
   );
@@ -131,11 +176,18 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     weight:    e.weight,
   }));
 
-  // Pre-build adjacency for O(1) neighbor lookup on click
+  // Adjacency for click-highlight
   const neighbors = new Map(simNodes.map(n => [n.channel_id, new Set()]));
   for (const l of simLinks) {
     neighbors.get(l.source.channel_id)?.add(l.target.channel_id);
     neighbors.get(l.target.channel_id)?.add(l.source.channel_id);
+  }
+
+  // Per-node set of edge types it participates in (for edge-highlight dimming)
+  const nodeEdgeTypes = new Map(simNodes.map(n => [n.channel_id, new Set()]));
+  for (const l of simLinks) {
+    nodeEdgeTypes.get(l.source.channel_id)?.add(l.edge_type);
+    nodeEdgeTypes.get(l.target.channel_id)?.add(l.edge_type);
   }
 
   const maxMembers = Math.max(...simNodes.map(n => n.member_count || 0), 1);
@@ -145,13 +197,15 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     return base + (n.member_count / maxMembers) * (top - base);
   };
 
-  // ── Filter / interaction state ────────────────────────────────────────────
-  let hiddenRisk   = new Set();      // all visible by default — user asked for "show all"
-  let recentOnly   = false;
-  let minWeight    = 1;
-  let selectedNode = null;
-  let hoveredNode  = null;
+  // ── State ─────────────────────────────────────────────────────────────────
+  let hiddenRisk         = new Set(); // risk levels hidden by checkbox
+  let recentOnly         = false;
+  let minWeight          = 1;
+  let selectedNode       = null;
+  let hoveredNode        = null;
+  let highlightedEdges   = new Set(); // edge types actively highlighted
 
+  // A node is "visible" if its risk level isn't hidden and recent-only is satisfied
   const isVisible = n =>
     !hiddenRisk.has(n.risk_level) && !(recentOnly && !n.is_recent);
 
@@ -162,10 +216,7 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     .scale(INITIAL_SCALE);
   const zoom = d3.zoom()
     .scaleExtent([0.02, 16])
-    .on("zoom", e => {
-      transform = e.transform;
-      draw();
-    });
+    .on("zoom", e => { transform = e.transform; draw(); });
   d3.select(canvas).call(zoom);
   d3.select(canvas).call(zoom.transform, transform);
 
@@ -184,16 +235,10 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
       .force("charge",  d3.forceManyBody().strength(-90).theta(0.9))
       .force("center",  d3.forceCenter(W / 2, H / 2))
       .force("collide", d3.forceCollide().radius(d => nodeR(d) + 2).iterations(1))
-      .alphaDecay(0.04)      // ~115 ticks vs default ~300
+      .alphaDecay(0.04)
       .velocityDecay(0.4)
-      .on("tick", () => {
-        tickN++;
-        if (tickN % 3 === 0) draw();   // throttle to every 3rd tick
-      })
-      .on("end", () => {
-        updateStatus();
-        draw();
-      });
+      .on("tick", () => { tickN++; if (tickN % 3 === 0) draw(); })
+      .on("end",  () => { updateStatus(); draw(); });
   }
 
   function updateStatus() {
@@ -204,7 +249,6 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     statusEl.textContent = `${vn.toLocaleString()} nodes · ${ve.toLocaleString()} edges`;
   }
 
-  // ── Initial run ───────────────────────────────────────────────────────────
   statusEl.textContent = `${nodes.length.toLocaleString()} nodes · simulating…`;
   buildSim(simNodes, simLinks);
 
@@ -215,25 +259,26 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
 
-    const scale   = transform.k;
-    const selId   = selectedNode?.channel_id ?? null;
+    const scale  = transform.k;
+    const selId  = selectedNode?.channel_id ?? null;
     const selNbrs = selId ? neighbors.get(selId) : null;
     const hasSel  = selId !== null;
+    const hasEdgeHL = highlightedEdges.size > 0;
 
-    // ── Edges ──────────────────────────────────────────────────────────────
-    // Group by type to minimise strokeStyle changes
+    // ── Collect visible links ───────────────────────────────────────────────
+    const visibleLinks = simLinks.filter(l =>
+      l.weight >= minWeight && isVisible(l.source) && isVisible(l.target)
+    );
+
+    // Group by edge_type for batched strokes
     const groups = {};
-    for (const l of simLinks) {
-      if (l.weight < minWeight) continue;
-      if (!isVisible(l.source) || !isVisible(l.target)) continue;
-      if (hasSel) {
-        if (l.source.channel_id !== selId && l.target.channel_id !== selId) continue;
-      }
+    for (const l of visibleLinks) {
       (groups[l.edge_type] ??= []).push(l);
     }
 
-    if (!hasSel) {
-      // Non-forward edges: batched stroke (fast, no blending needed)
+    // ── Edge rendering ──────────────────────────────────────────────────────
+    if (!hasSel && !hasEdgeHL) {
+      // ── Default: all edges at normal alpha ────────────────────────────────
       for (const [type, links] of Object.entries(groups)) {
         if (type === "forward") continue;
         ctx.beginPath();
@@ -246,7 +291,6 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
         }
         ctx.stroke();
       }
-      // Forward edges: one stroke() per line so "lighter" accumulates at crossings
       if (groups.forward) {
         ctx.globalCompositeOperation = "lighter";
         ctx.strokeStyle = EDGE_COLOR.forward;
@@ -260,39 +304,87 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
         }
         ctx.globalCompositeOperation = "source-over";
       }
-    } else {
-      // Dim non-adjacent edges
+
+    } else if (hasEdgeHL && !hasSel) {
+      // ── Edge-type highlight mode: dim everything, then light up selected types
+      // Dim pass — all edges very faint
       ctx.globalAlpha = 0.04;
       ctx.strokeStyle = "#4b5563";
       ctx.lineWidth   = Math.max(0.5, 1 / scale);
       ctx.beginPath();
-      for (const l of simLinks) {
-        if (l.weight < minWeight) continue;
-        if (!isVisible(l.source) || !isVisible(l.target)) continue;
+      for (const l of visibleLinks) {
         ctx.moveTo(l.source.x, l.source.y);
         ctx.lineTo(l.target.x, l.target.y);
       }
       ctx.stroke();
 
-      // Highlight adjacent edges; forward gets per-line additive blending
-      for (const [type, links] of Object.entries(groups)) {
+      // Bright pass — only highlighted types
+      for (const type of highlightedEdges) {
+        const links = groups[type];
+        if (!links) continue;
+        if (type === "forward") {
+          ctx.globalCompositeOperation = "lighter";
+          ctx.strokeStyle = EDGE_COLOR.forward;
+          ctx.lineWidth   = Math.max(1, 1.8 / scale);
+          ctx.globalAlpha = 0.85;
+          for (const l of links) {
+            ctx.beginPath();
+            ctx.moveTo(l.source.x, l.source.y);
+            ctx.lineTo(l.target.x, l.target.y);
+            ctx.stroke();
+          }
+          ctx.globalCompositeOperation = "source-over";
+        } else {
+          ctx.beginPath();
+          ctx.strokeStyle = EDGE_COLOR[type] || "#4b5563";
+          ctx.lineWidth   = Math.max(1, 1.8 / scale);
+          ctx.globalAlpha = 0.9;
+          for (const l of links) {
+            ctx.moveTo(l.source.x, l.source.y);
+            ctx.lineTo(l.target.x, l.target.y);
+          }
+          ctx.stroke();
+        }
+      }
+
+    } else {
+      // ── Node-selected mode (existing behaviour) ───────────────────────────
+      ctx.globalAlpha = 0.04;
+      ctx.strokeStyle = "#4b5563";
+      ctx.lineWidth   = Math.max(0.5, 1 / scale);
+      ctx.beginPath();
+      for (const l of visibleLinks) {
+        ctx.moveTo(l.source.x, l.source.y);
+        ctx.lineTo(l.target.x, l.target.y);
+      }
+      ctx.stroke();
+
+      const adjGroups = {};
+      for (const l of visibleLinks) {
+        if (l.source.channel_id !== selId && l.target.channel_id !== selId) continue;
+        // If edge-highlight is also active, only show adjacent edges of those types
+        if (hasEdgeHL && !highlightedEdges.has(l.edge_type)) continue;
+        (adjGroups[l.edge_type] ??= []).push(l);
+      }
+
+      for (const [type, links] of Object.entries(adjGroups)) {
         if (type === "forward") continue;
-        ctx.globalAlpha = 0.85;
         ctx.beginPath();
         ctx.strokeStyle = EDGE_COLOR[type] || "#4b5563";
         ctx.lineWidth   = Math.max(1, 1.5 / scale);
+        ctx.globalAlpha = 0.85;
         for (const l of links) {
           ctx.moveTo(l.source.x, l.source.y);
           ctx.lineTo(l.target.x, l.target.y);
         }
         ctx.stroke();
       }
-      if (groups.forward) {
+      if (adjGroups.forward) {
         ctx.globalCompositeOperation = "lighter";
         ctx.globalAlpha = 0.85;
         ctx.strokeStyle = EDGE_COLOR.forward;
         ctx.lineWidth   = Math.max(1, 1.5 / scale);
-        for (const l of groups.forward) {
+        for (const l of adjGroups.forward) {
           ctx.beginPath();
           ctx.moveTo(l.source.x, l.source.y);
           ctx.lineTo(l.target.x, l.target.y);
@@ -306,10 +398,19 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     for (const n of simNodes) {
       if (!isVisible(n)) continue;
 
-      const r        = nodeR(n);
+      const r         = nodeR(n);
       const isSelNode = n.channel_id === selId;
-      const isNbr    = selNbrs?.has(n.channel_id) ?? false;
-      const dimmed   = hasSel && !isSelNode && !isNbr;
+      const isNbr     = selNbrs?.has(n.channel_id) ?? false;
+
+      // Dimming logic — both systems can dim independently; take the stronger dim
+      let dimmed = false;
+      if (hasSel  && !isSelNode && !isNbr) dimmed = true;
+      if (hasEdgeHL && !hasSel) {
+        // Dim nodes that have NO edges of the highlighted types
+        const types = nodeEdgeTypes.get(n.channel_id) || new Set();
+        const hasMatch = [...highlightedEdges].some(t => types.has(t));
+        if (!hasMatch) dimmed = true;
+      }
 
       ctx.globalAlpha = dimmed ? 0.1 : 1;
 
@@ -354,7 +455,7 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     ctx.restore();
   }
 
-  // ── Hit test (canvas coords → nearest node) ───────────────────────────────
+  // ── Hit test ──────────────────────────────────────────────────────────────
   function nodeAt(cx, cy) {
     const sx = (cx - transform.x) / transform.k;
     const sy = (cy - transform.y) / transform.k;
@@ -373,10 +474,7 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     const my = e.clientY - rect.top;
     const hit = nodeAt(mx, my);
 
-    if (hit !== hoveredNode) {
-      hoveredNode = hit;
-      draw();
-    }
+    if (hit !== hoveredNode) { hoveredNode = hit; draw(); }
 
     if (hit) {
       canvas.style.cursor = "pointer";
@@ -390,10 +488,9 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
         ${hit.is_recent ? `<br><span style="color:${RECENT_COLOR}">★ recently discovered</span>` : ""}
       `;
       tooltip.style.display = "block";
-      // Keep tooltip inside the wrap
       const tw = 220, th = 80;
       tooltip.style.left = (mx + 14 + tw > W ? mx - tw - 6 : mx + 14) + "px";
-      tooltip.style.top  = (my - 10 + th > H ? my - th : my - 10) + "px";
+      tooltip.style.top  = (my - 10 + th > H ? my - th   : my - 10)   + "px";
     } else {
       canvas.style.cursor = "grab";
       tooltip.style.display = "none";
@@ -406,20 +503,11 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     canvas.style.cursor = "grab";
   });
 
-  // ── Click to select ───────────────────────────────────────────────────────
-  // d3.zoom calls stopImmediatePropagation on mousedown, which breaks native
-  // mousedown/mouseup-based click detection. Use d3's own click event instead:
-  // after a pan d3.zoom adds a capture-phase suppressor so the click never
-  // fires; after a genuine click it passes through normally.
+  // ── Click to select node ──────────────────────────────────────────────────
   d3.select(canvas).on("click.select", event => {
     const hit = nodeAt(event.offsetX, event.offsetY);
-    if (hit) {
-      selectedNode = hit;
-      showNodeInfo(hit);
-    } else {
-      selectedNode = null;
-      document.getElementById("v1-node-info").style.display = "none";
-    }
+    if (hit) { selectedNode = hit; showNodeInfo(hit); }
+    else     { selectedNode = null; document.getElementById("v1-node-info").style.display = "none"; }
     draw();
   });
 
@@ -431,30 +519,24 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     d3.select(canvas).transition().duration(250).call(zoom.scaleBy, 0.67)
   );
   document.getElementById("v1-zoom-fit").addEventListener("click", () =>
-    d3.select(canvas).transition().duration(400).call(zoom.transform,
+    d3.select(canvas).transition().duration(400).call(
+      zoom.transform,
       d3.zoomIdentity
         .translate(W / 2 * (1 - INITIAL_SCALE), H / 2 * (1 - INITIAL_SCALE))
-        .scale(INITIAL_SCALE))
+        .scale(INITIAL_SCALE)
+    )
   );
 
   // ── Risk filter toggles ───────────────────────────────────────────────────
   document.querySelectorAll(".v1-risk-toggle").forEach(cb => {
-    cb.addEventListener("change", applyFilters);
+    cb.addEventListener("change", applyRiskFilter);
   });
   document.getElementById("v1-recent-only").addEventListener("change", e => {
     recentOnly = e.target.checked;
-    applyFilters();
+    applyRiskFilter();
   });
 
-  // ── Edge weight slider ────────────────────────────────────────────────────
-  document.getElementById("v1-weight-slider").addEventListener("input", e => {
-    minWeight = +e.target.value;
-    document.getElementById("v1-weight-label").textContent = minWeight;
-    updateStatus();
-    draw();
-  });
-
-  function applyFilters() {
+  function applyRiskFilter() {
     hiddenRisk = new Set(
       [...document.querySelectorAll(".v1-risk-toggle")]
         .filter(c => !c.checked)
@@ -464,12 +546,49 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
     document.getElementById("v1-node-info").style.display = "none";
 
     const activeNodes = simNodes.filter(isVisible);
-    const activeLinks = simLinks.filter(l =>
-      isVisible(l.source) && isVisible(l.target)
-    );
+    const activeLinks = simLinks.filter(l => isVisible(l.source) && isVisible(l.target));
     statusEl.textContent = `${activeNodes.length.toLocaleString()} nodes · simulating…`;
     buildSim(activeNodes, activeLinks);
   }
+
+  // ── Edge highlight buttons ────────────────────────────────────────────────
+  function syncEdgeBtnStyles() {
+    document.querySelectorAll(".v1-edge-highlight-btn").forEach(btn => {
+      const type    = btn.dataset.edgeType;
+      const active  = highlightedEdges.has(type);
+      const color   = EDGE_COLOR[type] || "#fff";
+      btn.style.background   = active ? `${color}22` : "rgba(0,0,0,0)";
+      btn.style.borderColor  = active ? color         : `${color}44`;
+      btn.style.fontWeight   = active ? "600"         : "400";
+    });
+  }
+
+  document.querySelectorAll(".v1-edge-highlight-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.edgeType;
+      if (highlightedEdges.has(type)) {
+        highlightedEdges.delete(type);
+      } else {
+        highlightedEdges.add(type);
+      }
+      syncEdgeBtnStyles();
+      draw();
+    });
+  });
+
+  document.getElementById("v1-edge-reset").addEventListener("click", () => {
+    highlightedEdges.clear();
+    syncEdgeBtnStyles();
+    draw();
+  });
+
+  // ── Edge weight slider ────────────────────────────────────────────────────
+  document.getElementById("v1-weight-slider").addEventListener("input", e => {
+    minWeight = +e.target.value;
+    document.getElementById("v1-weight-label").textContent = minWeight;
+    updateStatus();
+    draw();
+  });
 
   // ── Node info panel ───────────────────────────────────────────────────────
   function showNodeInfo(d) {
@@ -491,7 +610,7 @@ export async function renderNetworkGraphV1(container, { onSelectChannel } = {}) 
   }
 }
 
-// ── Background-only render (no controls, no interaction) ─────────────────────
+// ── Background-only render (unchanged) ───────────────────────────────────────
 export async function renderGraphBg(canvas) {
   let aborted = false;
   let rafId;
@@ -504,8 +623,8 @@ export async function renderGraphBg(canvas) {
   };
 
   const dpr = window.devicePixelRatio || 1;
-  const W = window.innerWidth;
-  const H = window.innerHeight;
+  const W   = window.innerWidth;
+  const H   = window.innerHeight;
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   const ctx = canvas.getContext("2d");
@@ -517,9 +636,8 @@ export async function renderGraphBg(canvas) {
 
   const { nodes, edges } = graphData;
 
-  // Keep only HIGH + MEDIUM, cap at 400 total
-  const hi  = nodes.filter(n => n.risk_level === "high");
-  const med = nodes.filter(n => n.risk_level === "medium");
+  const hi      = nodes.filter(n => n.risk_level === "high");
+  const med     = nodes.filter(n => n.risk_level === "medium");
   const bgNodes = [...hi, ...med].slice(0, 400);
   const bgIds   = new Set(bgNodes.map(n => n.channel_id));
 
@@ -545,7 +663,6 @@ export async function renderGraphBg(canvas) {
     .alphaDecay(0.04)
     .velocityDecay(0.4);
 
-  // Very slow circular drift applied after sim settles
   let driftAngle = Math.random() * Math.PI * 2;
   let ox = 0, oy = 0;
 
@@ -558,7 +675,6 @@ export async function renderGraphBg(canvas) {
     ctx.save();
     ctx.translate(ox, oy);
 
-    // Edges — same grouping as V1 but at reduced alpha
     const groups = {};
     for (const l of simLinks) {
       if (l.source.x == null) continue;
@@ -592,7 +708,6 @@ export async function renderGraphBg(canvas) {
       ctx.globalCompositeOperation = "source-over";
     }
 
-    // Nodes
     for (const n of simNodes) {
       if (n.x == null) continue;
       ctx.globalAlpha = 0.65;
@@ -621,6 +736,8 @@ function parseFlags(flags) {
   if (Array.isArray(flags)) return flags;
   try { return JSON.parse(flags); } catch { return []; }
 }
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function esc(str) {
   if (!str) return "";

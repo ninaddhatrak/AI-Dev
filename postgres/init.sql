@@ -91,7 +91,8 @@ CREATE TABLE IF NOT EXISTS actors (
     cross_channel_posts     INTEGER NOT NULL DEFAULT 0,
     channels_administered   JSONB DEFAULT '[]',
     risk_level              TEXT NOT NULL DEFAULT 'unclassified',
-    risk_signals            JSONB DEFAULT '[]'
+    risk_signals            JSONB DEFAULT '[]',
+    dataset                 TEXT
 );
 
 -- ---------------------------------------------------------------------------

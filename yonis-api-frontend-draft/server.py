@@ -16,6 +16,7 @@ import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from psycopg2.extras import RealDictCursor
 
 DSN = os.getenv("DATABASE_URL", "postgresql://tracker:tracker_pw@localhost:5433/harm_tracker")
@@ -28,6 +29,12 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def root():
+    """Root endpoint — redirects to API documentation."""
+    return RedirectResponse(url="/docs")
 
 
 @contextmanager
@@ -132,7 +139,7 @@ def list_channels(
     sql = f"""
         SELECT channel_id, username, title, member_count, risk_level,
                relevance_score, content_flags, is_active, is_dead_end,
-               last_seen, discovery_keywords
+               last_seen, discovered_at, discovery_keywords
         FROM channels
         WHERE {' AND '.join(conditions)}
         ORDER BY
