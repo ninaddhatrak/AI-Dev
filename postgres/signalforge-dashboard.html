@@ -823,7 +823,139 @@ body {
 .new-terms-label { font-size: 9.5px; font-weight: 600; color: var(--faint); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 7px; font-family: 'IBM Plex Mono', monospace; }
 .new-terms-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; background: var(--yellow-soft); border: 1px solid var(--yellow-b); color: var(--yellow); padding: 2px 8px; border-radius: var(--r-xs); }
-.flag-chip { display: inline-flex; align-items: center; padding: 3px 7px; background: rgba(120,128,160,.1); color: var(--text2); border-radius: 999px; font-size: 10.5px; font-family: 'IBM Plex Mono', monospace; margin: 2px; }
+/* ── SPLIT-PANE MESSAGE EXPLORER ──────────────── */
+.msg-shell {
+  display: flex;
+  gap: 16px;
+  height: 640px;
+  margin-top: 10px;
+}
+.channel-picker {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.channel-picker-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.channel-pick-list {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  max-height: 520px;
+}
+.channel-pick-item {
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: all .15s ease;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.channel-pick-item:last-child {
+  border-bottom: none;
+}
+.channel-pick-item:hover {
+  background: var(--surface2);
+}
+.channel-pick-item.active {
+  background: rgba(91, 159, 255, 0.08);
+  border-left: 3px solid var(--blue);
+}
+.channel-pick-name {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.channel-pick-meta {
+  font-size: 11px;
+  color: var(--faint);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.msg-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  height: 100%;
+}
+.msg-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 16px 20px;
+}
+.msg-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-family: 'Syne', sans-serif;
+  color: var(--text);
+  letter-spacing: -.02em;
+}
+.msg-header-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.msg-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  max-height: 520px;
+}
+.kw-highlight {
+  background: rgba(255, 147, 64, 0.22);
+  color: var(--orange);
+  border-radius: 2px;
+  padding: 0 3px;
+  font-weight: 500;
+}
+.skel {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 10px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── NETWORK ──────────────────────────────────── */
 .graph-shell { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -833,6 +965,20 @@ body {
   border-radius: var(--r); overflow: hidden;
 }
 #net-svg { display: block; width: 100%; height: 500px; }
+#net-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12,13,16,.88);
+  color: var(--text2);
+  font-size: 13px;
+  z-index: 15;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+#net-loader.hidden { opacity: 0; visibility: hidden; }
 .graph-controls {
   position: absolute; top: 12px; left: 12px; z-index: 10;
   display: flex; gap: 6px; flex-wrap: wrap;
@@ -880,6 +1026,44 @@ body {
 .cluster-item:hover { border-color: var(--border2); }
 .cluster-name { font-size: 12.5px; font-weight: 500; color: var(--text); margin-bottom: 1px; }
 .cluster-sub { font-size: 11.5px; color: var(--muted); }
+
+/* ── CLUSTER EXPLORER ─────────────────────────── */
+.cexp-stats-bar { display:flex; gap:10px; padding:11px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.cexp-stat { display:flex; flex-direction:column; align-items:flex-start; }
+.cexp-stat-val { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text); letter-spacing:-.02em; line-height:1; }
+.cexp-stat-lbl { font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--faint); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+.cexp-stat-sep { width:1px; background:var(--border); align-self:stretch; flex-shrink:0; }
+#cexpCanvas { width:100%; height:480px; border-radius:var(--r-sm); cursor:crosshair; display:block; }
+.cexp-canvas-wrap { padding:14px 16px; }
+.cexp-legend { display:flex; flex-wrap:wrap; gap:12px; padding:0 16px 12px; }
+.cexp-legend-item { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text2); }
+.cexp-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px currentColor; }
+.cexp-channel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; padding:14px 16px; }
+.cexp-ch-card {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:13px; transition:border-color .15s, transform .15s, box-shadow .15s; cursor:pointer;
+}
+.cexp-ch-card:hover { border-color:var(--border3); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+.cexp-ch-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:8px; }
+.cexp-ch-name { font-weight:600; font-size:12.5px; color:var(--text); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+.cexp-ch-user { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--faint); }
+.cexp-ch-cat { font-size:9.5px; font-weight:600; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; font-family:'IBM Plex Mono',monospace; white-space:nowrap; flex-shrink:0; }
+.cexp-ch-footer { display:flex; align-items:center; gap:10px; margin-top:10px; font-size:11.5px; color:var(--muted); }
+.cexp-ch-stat { display:flex; align-items:center; gap:4px; }
+#cexpTooltip {
+  position:fixed; background:rgba(14,16,28,.97); color:var(--text);
+  padding:12px 14px; border-radius:var(--r-sm); font-size:12px;
+  pointer-events:none; z-index:9999; max-width:280px;
+  backdrop-filter:blur(12px); border:1px solid var(--border2);
+  display:none; box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#cexpTooltip .cexp-tt-title { font-family:'Syne',sans-serif; font-weight:600; font-size:13px; color:var(--text); margin-bottom:3px; }
+#cexpTooltip .cexp-tt-cat { font-size:11px; color:var(--muted); margin-bottom:8px; font-family:'IBM Plex Mono',monospace; }
+#cexpTooltip .cexp-tt-stats { font-size:11px; color:var(--text2); line-height:1.7; font-family:'IBM Plex Mono',monospace; }
+.cexp-empty { text-align:center; padding:40px 24px; color:var(--faint); font-size:13px; }
+.cexp-loading { text-align:center; padding:40px 24px; color:var(--faint); font-size:13px; }
+.cexp-spinner { border:2px solid rgba(255,255,255,.08); border-top:2px solid var(--blue); border-radius:50%; width:28px; height:28px; animation:spin 1s linear infinite; margin:0 auto 12px; }
+@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
 /* ── FOOTER ───────────────────────────────────── */
 .footer {
@@ -1186,11 +1370,22 @@ body {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input class="search-input" id="si" placeholder="Search channels, usernames, categories…" oninput="renderChannels()">
         </div>
-        <button class="filter-btn on" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn on" onclick="setFilter('all',this)">All Risk</button>
         <button class="filter-btn crit" onclick="setFilter('critical',this)">Critical</button>
         <button class="filter-btn high" onclick="setFilter('high',this)">High</button>
         <button class="filter-btn med" onclick="setFilter('medium',this)">Medium</button>
         <button class="filter-btn low" onclick="setFilter('low',this)">Low</button>
+      </div>
+      <!-- Thematic Category Filter Row -->
+      <div class="search-row" style="border-bottom: 1px solid var(--border); padding-top: 0; gap: 6px; flex-wrap: wrap">
+        <span style="font-size: 11px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; align-self: center">Category:</span>
+        <button class="filter-btn on" data-cat-filter="all" onclick="setCategoryFilter('all',this)">All Categories</button>
+        <button class="filter-btn" data-cat-filter="18+ / Adult Content" onclick="setCategoryFilter('18+ / Adult Content',this)">🔞 18+ Adult</button>
+        <button class="filter-btn" data-cat-filter="Crypto / Web3" onclick="setCategoryFilter('Crypto / Web3',this)">🪙 Crypto & Web3</button>
+        <button class="filter-btn" data-cat-filter="Scams & Fraud" onclick="setCategoryFilter('Scams & Fraud',this)">⚠️ Scams & Fraud</button>
+        <button class="filter-btn" data-cat-filter="News / OSINT / VPNs" onclick="setCategoryFilter('News / OSINT / VPNs',this)">📰 News & OSINT</button>
+        <button class="filter-btn" data-cat-filter="Academic / Universities" onclick="setCategoryFilter('Academic / Universities',this)">🎓 Academic</button>
+        <button class="filter-btn" data-cat-filter="General / Other" onclick="setCategoryFilter('General / Other',this)">📁 Other</button>
       </div>
       <!-- Export row -->
       <div style="display:flex;gap:7px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
@@ -1327,35 +1522,31 @@ body {
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header" style="justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="card-title">Message Feed</span>
-          <span class="card-tag" id="msg-count">0 messages</span>
+    <div class="msg-shell">
+      <!-- Left column: channel picker -->
+      <div class="channel-picker">
+        <div class="card channel-picker-card" style="margin-bottom:0">
+          <div class="card-header" style="padding:10px 14px; justify-content:space-between">
+            <span class="card-title">Monitored Channels</span>
+            <span class="card-tag" id="msg-ch-count">—</span>
+          </div>
+          <div style="padding:8px 12px; border-bottom:1px solid var(--border)">
+            <input class="search-input" id="msg-ch-search" placeholder="Filter channels…" style="width:100%; font-size:12px; height:32px" oninput="msgFilterChannels()">
+          </div>
+          <div class="channel-pick-list" id="ch-pick-list">
+            <!-- Skeletons will show here initially -->
+          </div>
         </div>
-        <button class="btn-action" onclick="exportMessages()">↓ Export CSV</button>
       </div>
-      <div class="msg-search-row">
-        <div class="search-input-wrap" style="flex:1;min-width:220px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="search-input" id="msg-search" placeholder="Search text, channel name, hashtags, mentions…" oninput="renderMessages()">
+
+      <!-- Right column: message listing -->
+      <div class="msg-panel">
+        <div class="msg-header" id="msg-channel-header">
+          <p style="color:var(--muted)">Select a channel on the left to browse its messages.</p>
         </div>
-        <button class="filter-btn on" onclick="setMsgFilter('all',this)">All</button>
-        <button class="filter-btn" onclick="setMsgFilter('flagged',this)">Flagged</button>
-        <button class="filter-btn" onclick="setMsgFilter('forwarded',this)">Forwarded</button>
-        <button class="filter-btn" onclick="setMsgFilter('media',this)">Has Media</button>
-        <button class="filter-btn" onclick="setMsgFilter('embedded',this)">Embedded</button>
-        <button class="filter-btn" onclick="setMsgFilter('links',this)">Has Links</button>
-      </div>
-      <!-- Date range -->
-      <div style="display:flex;gap:7px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-        <input class="search-input no-icon" id="export-msg-start" type="date" style="max-width:155px;flex:none">
-        <input class="search-input no-icon" id="export-msg-end"   type="date" style="max-width:155px;flex:none">
-        <input class="search-input no-icon" id="export-msg-channel" placeholder="Channel filter…" style="flex:1;min-width:160px">
-        <span style="font-size:10.5px;color:var(--faint);font-family:'IBM Plex Mono',monospace">Export by date + channel</span>
-      </div>
-      <div class="card-body" style="padding:0 16px 8px;max-height:640px;overflow-y:auto">
-        <div id="msg-list"></div>
+        <div class="msg-list-wrap" id="msg-list-wrap">
+          <div class="empty-state">No channel selected.</div>
+        </div>
       </div>
     </div>
 
@@ -1460,6 +1651,7 @@ body {
               </style>
             </defs>
           </svg>
+          <div id="net-loader">Loading network graph…</div>
           <div id="ntt"></div>
         </div>
         <div class="graph-sidebar">
@@ -1484,6 +1676,19 @@ body {
             <label class="checkbox-row"><input type="checkbox" class="risk-toggle" data-risk="low" checked>Low</label>
             <label class="checkbox-row"><input type="checkbox" id="recent-only-toggle">Recently discovered only</label>
             <label class="checkbox-row"><input type="checkbox" id="active-only-toggle">Active channels only</label>
+            <div class="legend-divider" style="margin: 10px 0"></div>
+            <div class="card-title" style="margin-bottom:8px">Node Coloring</div>
+            <select id="node-color-select" class="btn" style="width:100%;background:var(--surface2);border:1px solid var(--border);padding:6px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text);border-radius:4px;cursor:pointer;margin-bottom:12px">
+              <option value="category">Thematic Category (Default)</option>
+              <option value="risk">Risk Level</option>
+            </select>
+            <div class="card-title" style="margin-bottom:8px">Layout Style</div>
+            <select id="layout-style-select" class="btn" style="width:100%;background:var(--surface2);border:1px solid var(--border);padding:6px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text);border-radius:4px;cursor:pointer">
+              <option value="standard">Standard Force Directed</option>
+              <option value="clustered">Thematic Category Clusters</option>
+              <option value="risk-clustered">Risk Level Clusters</option>
+            </select>
+            <div style="margin-top:10px;font-size:11px;color:var(--faint);line-height:1.4">Tip: click a node to inspect it, and use filters to reduce graph density for faster layout.</div>
           </div>
           <div class="node-info" id="node-info" style="display:none">
             <div class="card-title" style="margin-bottom:10px">Selected channel</div>
@@ -1519,7 +1724,54 @@ body {
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- ── CLUSTER EXPLORER ──────────────────────── -->
+    <div style="height:10px"></div>
+
+    <div class="card" style="margin-bottom:0;overflow:visible">
+      <div class="card-header" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="card-title">Channel Cluster Explorer</span>
+          <span class="card-tag" id="cexp-badge">loading…</span>
+        </div>
+        <span style="font-size:11px;color:var(--faint);font-family:'IBM Plex Mono',monospace">Hover dots · Filter categories · Search channels</span>
+      </div>
+
+      <!-- Mini KPI strip -->
+      <div class="cexp-stats-bar">
+        <div class="cexp-stat"><div class="cexp-stat-val" id="cexp-total">—</div><div class="cexp-stat-lbl">Channels</div></div>
+        <div class="cexp-stat-sep"></div>
+        <div class="cexp-stat"><div class="cexp-stat-val" id="cexp-cats">—</div><div class="cexp-stat-lbl">Categories</div></div>
+        <div class="cexp-stat-sep"></div>
+        <div class="cexp-stat"><div class="cexp-stat-val" id="cexp-visible">—</div><div class="cexp-stat-lbl">Visible</div></div>
+      </div>
+
+      <!-- Search + category filters -->
+      <div class="search-row">
+        <div class="search-input-wrap" style="flex:1;min-width:200px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="cexp-search" placeholder="Search channels by title or username…" oninput="cexpApplyFilters()">
+        </div>
+        <div id="cexp-filter-group" style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="filter-btn on" data-cexp-cat="all" onclick="cexpSetCategory('all',this)">All</button>
+        </div>
+      </div>
+
+      <!-- Canvas scatter -->
+      <div class="cexp-canvas-wrap" style="background:#050710;margin:0 16px;border-radius:var(--r-sm);border:1px solid var(--border);position:relative">
+        <canvas id="cexpCanvas"></canvas>
+        <div id="cexpTooltip">
+          <div class="cexp-tt-title"></div>
+          <div class="cexp-tt-cat"></div>
+          <div class="cexp-tt-stats"></div>
+        </div>
+      </div>
+
+      <!-- Category legend -->
+      <div class="cexp-legend" id="cexp-legend" style="margin-bottom:16px"></div>
+    </div>
+
+  </div><!-- /panel-network -->
 
   </div><!-- /page -->
 
@@ -1539,12 +1791,20 @@ const API = 'http://localhost:3000';
 const RCOL  = { critical:'#ff4d5a', high:'#ff9340', medium:'#ffd452', low:'#3de888', unclassified:'#7a8099', bridge:'#7a8099' };
 const RBGA  = { critical:'rgba(255,77,90,.1)', high:'rgba(255,147,64,.1)', medium:'rgba(255,212,82,.1)', low:'rgba(61,232,136,.1)', unclassified:'rgba(122,128,153,.08)', bridge:'rgba(122,128,153,.08)' };
 const RORDER= { critical:0, high:1, medium:2, low:3, unclassified:4 };
+const NETWORK_CACHE_KEY = 'signalforge-network-layout-v1';
 
 let channelData=[], actorData=[], keywordData=[], netAPIData=null, messageData=[];
 let messageDataTotal = 0, actorDataTotal = 0;
-let curFilter='all', actorFilter='all', sortCol='_idx', sortDir=1;
+let curFilter='all', curCategoryFilter='all', actorFilter='all', sortCol='_idx', sortDir=1;
 let msgFilter='all';
 let focusedChannel=null;
+
+function setCategoryFilter(cat, el) {
+  curCategoryFilter = cat;
+  document.querySelectorAll('[data-cat-filter]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderChannels();
+}
 let expandedActors=new Set(), expandedChannels=new Set();
 
 /* ── STATIC FALLBACKS ─────────────────────────── */
@@ -1603,52 +1863,82 @@ function populateDatasets(){
 }
 
 /* ── API ──────────────────────────────────────── */
-async function fetchAll(){
-  try{
-    const [sr,cr,ar,kr,nr,mr]=await Promise.all([
-      fetch(`${API}/api/stats`),fetch(`${API}/api/channels`),fetch(`${API}/api/actors`),
-      fetch(`${API}/api/keywords`),fetch(`${API}/api/network`),fetch(`${API}/api/messages`)
-    ]);
-    if(sr.ok) applyStats(await sr.json());
-    if(cr.ok){ channelData=await cr.json(); }
-    if(ar.ok){
-      const actorResponse = await ar.json();
-      if (actorResponse && Array.isArray(actorResponse.actors)) {
-        actorData = actorResponse.actors;
-        actorDataTotal = actorResponse.total || actorData.length;
-      } else {
-        actorData = actorResponse;
-        actorDataTotal = Array.isArray(actorData) ? actorData.length : 0;
-      }
+async function fetchData(name, url, callback) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    callback(json);
+    populateDatasets();
+  } catch (e) {
+    console.error(`Error loading ${name}:`, e);
+  }
+}
+
+async function fetchAll() {
+  // 1. Stats
+  fetchData('stats', `${API}/api/stats`, data => {
+    applyStats(data);
+    renderActorStats();
+    updateAlerts();
+  });
+
+  // 2. Channels
+  fetchData('channels', `${API}/api/channels`, data => {
+    channelData = data;
+    renderChannels();
+    renderTopChannels();
+    renderClusters();
+    initMessageExplorer();
+  });
+
+  // 3. Actors
+  fetchData('actors', `${API}/api/actors`, data => {
+    if (data && Array.isArray(data.actors)) {
+      actorData = data.actors;
+      actorDataTotal = data.total || actorData.length;
+    } else {
+      actorData = data;
+      actorDataTotal = Array.isArray(actorData) ? actorData.length : 0;
     }
-    if(kr.ok){ keywordData=await kr.json(); }
-    if(nr.ok){ netAPIData=await nr.json(); }
-    if(mr.ok){
-      const messageResponse = await mr.json();
-      if (messageResponse && Array.isArray(messageResponse.messages)) {
-        messageData = messageResponse.messages;
-        messageDataTotal = messageResponse.total || messageData.length;
-      } else {
-        messageData = messageResponse;
-        messageDataTotal = Array.isArray(messageData) ? messageData.length : 0;
-      }
+    renderActors();
+    renderActorStats();
+  });
+
+  // 4. Keywords
+  fetchData('keywords', `${API}/api/keywords`, data => {
+    keywordData = data;
+    renderKeywords();
+  });
+
+  // 5. Network Map
+  fetchData('network', `${API}/api/network`, data => {
+    netAPIData = data;
+    renderClusters();
+    if (document.getElementById('panel-network')?.classList.contains('active')) {
+      netInit();
     }
-    const tr=await fetch(`${API}/api/timeline`);
-    if(tr.ok) renderTimeline(await tr.json());
-  }catch(e){}
-  populateDatasets();
-  renderChannels();
-  renderTopChannels();
-  renderActors();
-  renderActorStats();
-  renderTriageAlerts();
-  renderKeywords();
-  renderMessages();
-  updateMessageStats();
-  updateCharts();
-  renderClusters();
-  updateAlerts();
-  if(document.getElementById('panel-network')?.classList.contains('active')) netInit();
+  });
+
+  // 6. Messages (Limit to 500 for initial fast load & responsive UI)
+  fetchData('messages', `${API}/api/messages?limit=500`, data => {
+    if (data && Array.isArray(data.messages)) {
+      messageData = data.messages;
+      messageDataTotal = data.total || messageData.length;
+    } else {
+      messageData = data;
+      messageDataTotal = Array.isArray(messageData) ? messageData.length : 0;
+    }
+    updateMessageStats();
+    renderTriageAlerts();
+    updateAlerts();
+    updateCharts();
+  });
+
+  // 7. Timeline
+  fetchData('timeline', `${API}/api/timeline`, data => {
+    renderTimeline(data);
+  });
 }
 
 function fmtN(n){
@@ -1667,7 +1957,7 @@ function switchTab(id,el){
   el.classList.add('active');
   document.getElementById('bct').textContent=TABS[id]||id;
   if(id==='network') setTimeout(netInit,80);
-  if(id==='messages'){renderMessages();updateMessageStats();}
+  if(id==='messages'){initMessageExplorer();updateMessageStats();}
   if(id==='actors') renderActorStats();
 }
 
@@ -1780,6 +2070,7 @@ function renderChannels(){
   const q=(document.getElementById('si')?.value||'').toLowerCase();
   let rows=raw.map((c,i)=>({...c,_idx:i}));
   if(curFilter!=='all') rows=rows.filter(c=>(c.risk||'').toLowerCase()===curFilter);
+  if(curCategoryFilter!=='all') rows=rows.filter(c=>c.category===curCategoryFilter);
   if(q) rows=rows.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.category||'').toLowerCase().includes(q)||(c.dataset||'').toLowerCase().includes(q));
   rows.sort((a,b)=>{
     if(sortCol==='subs') return sortDir*(+a.subs-+b.subs);
@@ -1796,7 +2087,7 @@ function renderChannels(){
       <td class="mono" style="color:var(--faint)">${i+1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:6px">
-          <span class="ch-name">${c.name||'—'}</span>
+          <span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${fmtN(c.subs)} subs')">${c.name||'—'}</span>
           ${c.is_dead_end?`<span style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:1px 5px;border-radius:3px">dead-end</span>`:''}
         </div>
         ${c.discovery_method?`<div style="font-size:10.5px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">via ${c.discovery_method}</div>`:''}
@@ -1849,7 +2140,7 @@ function renderTopChannels(){
   const maxSubs=Math.max(...rows.map(r=>+r.subs||1));
   tb.innerHTML=rows.map(c=>`
     <tr>
-      <td><span class="ch-name">${c.name||'—'}</span></td>
+      <td><span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${fmtN(c.subs)} subs')">${c.name||'—'}</span></td>
       <td><div class="sub-row"><span class="mono">${fmtN(c.subs)}</span><div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,((+c.subs||0)/maxSubs)*100)}%"></div></div></div></td>
       <td><span class="badge ${rmap[(c.risk||'').toLowerCase()]||'b-un'}">${c.risk||'—'}</span></td>
       <td>${c.status==='Active'?`<span class="status-active">● Active</span>`:`<span class="status-banned">✕ ${c.status||'—'}</span>`}</td>
@@ -1956,21 +2247,35 @@ function focusChannel(name,risk,meta){
   const chMeta=document.getElementById('inv-channel-meta');if(chMeta) chMeta.textContent=meta;
   const msgNav=document.querySelector('.nav-item:nth-child(4)');
   if(msgNav) switchTab('messages',msgNav);
-  setTimeout(()=>{
-    const si=document.getElementById('msg-search');
-    if(si){si.value=name;renderMessages();}
-  },50);
+  
+  // Find match in channelData
+  const ch = channelData.find(c => c.name === name || c.username === name || c.channel_id === name);
+  if (ch) {
+    msgSelectChannel(ch.channel_id || ch.name);
+  } else {
+    // If not in channelData, try name itself
+    msgSelectChannel(name);
+  }
 }
 
 function clearFocus(){
   focusedChannel=null;
   const bar=document.getElementById('inv-bar');
   if(bar) bar.classList.remove('visible');
-  const si=document.getElementById('msg-search');
-  if(si){si.value='';renderMessages();}
 }
 
-/* ── MESSAGES ─────────────────────────────────── */
+/* ── MESSAGES (SPLIT-PANE EXPLORER) ───────────── */
+const MSG_EXP_KEYWORDS = [
+  "nudify","undress","deepnude","ai nude","nude","naked","nsfw",
+  "pay","payment","subscribe","bot","download","join","share",
+  "telegram","link","channel","group"
+];
+const MSG_EXP_KW_RE = new RegExp(`(${MSG_EXP_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")})`, "gi");
+
+let msgSelectedChannelId = null;
+let msgExplorerOffset = 0;
+const MSG_EXPLORER_PAGE_LIMIT = 50;
+
 function updateMessageStats(){
   const data=messageData.length?messageData:SMSGS;
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
@@ -1984,9 +2289,6 @@ function updateMessageStats(){
 function msgFlags(m){
   const flags=(m.content_flags&&parseArr(m.content_flags))||[];
   const kw=(m.keyword_matches&&parseArr(m.keyword_matches))||[];
-  const links=(m.extracted_links&&parseArr(m.extracted_links))||[];
-  const mentions=(m.extracted_mentions&&parseArr(m.extracted_mentions))||[];
-  const hashtags=(m.extracted_hashtags&&parseArr(m.extracted_hashtags))||[];
   let out='';
   if(m.flagged||flags.length) out+=`<span class="msg-flag">${flags.length?flags[0]:'flagged'}</span>`;
   if(m.forwarded||m.is_forwarded) out+=`<span class="msg-flag forward">↩ forwarded</span>`;
@@ -2013,129 +2315,211 @@ function msgExtractedDetail(m){
   return out;
 }
 
-function renderMessages(){
-  const data=messageData.length?messageData:SMSGS;
-  const q=(document.getElementById('msg-search')?.value||'').toLowerCase();
-  let rows=data.slice();
+function initMessageExplorer() {
+  const raw = channelData.length ? channelData : SCHAN;
+  
+  const chCountEl = document.getElementById('msg-ch-count');
+  if (chCountEl) chCountEl.textContent = raw.length;
 
-  if(msgFilter==='flagged')   rows=rows.filter(m=>m.flagged||m.is_flagged||(m.content_flags&&parseArr(m.content_flags).length));
-  else if(msgFilter==='forwarded') rows=rows.filter(m=>m.forwarded||m.is_forwarded);
-  else if(msgFilter==='media')    rows=rows.filter(m=>m.media||m.has_media);
-  else if(msgFilter==='embedded') rows=rows.filter(m=>m.is_embedded);
-  else if(msgFilter==='links')    rows=rows.filter(m=>(parseArr(m.extracted_links)||[]).length>0);
+  const pickList = document.getElementById('ch-pick-list');
+  if (!pickList) return;
 
-  if(q) rows=rows.filter(m=>
-    (m.text||'').toLowerCase().includes(q)||
-    (m.channel||m.channel_id||'').toLowerCase().includes(q)||
-    (parseArr(m.extracted_hashtags)||[]).some(h=>h.toLowerCase().includes(q))||
-    (parseArr(m.extracted_mentions)||[]).some(h=>h.toLowerCase().includes(q))
-  );
+  if (!raw.length) {
+    pickList.innerHTML = `<div class="empty-state" style="padding:16px">No channels found</div>`;
+    return;
+  }
 
-  const el=document.getElementById('msg-count');if(el) el.textContent=rows.length+' messages';
-  const list=document.getElementById('msg-list');if(!list) return;
+  // Filter default visible channels to threat-relevant only to keep list clean
+  const defaultVisible = raw.filter(c => ['critical', 'high', 'medium'].includes((c.risk || '').toLowerCase()));
+  renderExplorerChannelPicker(defaultVisible);
 
-  const critical=rows.filter(m=>m.risk==='critical');
-  const high    =rows.filter(m=>m.risk==='high');
-  const rest    =rows.filter(m=>m.risk!=='critical'&&m.risk!=='high');
+  if (!msgSelectedChannelId && raw.length) {
+    const sorted = [...raw].sort((a,b) => {
+      const aRisk = (a.risk || '').toLowerCase();
+      const bRisk = (b.risk || '').toLowerCase();
+      return (RORDER[aRisk] ?? 4) - (RORDER[bRisk] ?? 4);
+    });
+    const autoChannel = sorted[0];
+    if (autoChannel) {
+      msgSelectChannel(autoChannel.channel_id || autoChannel.name);
+    }
+  }
+}
 
-  let html='';
+function renderExplorerChannelPicker(channels) {
+  const pickList = document.getElementById('ch-pick-list');
+  if (!pickList) return;
 
-  if(critical.length){
-    html+=`<div class="swimlane-section sl-critical">
-      <div class="swimlane-header" onclick="toggleSwimlane('sl-crit-body','sl-crit-toggle')">
-        <span class="swimlane-label">⬤ Critical</span>
-        <span class="swimlane-count">${critical.length}</span>
-        <span class="swimlane-toggle" id="sl-crit-toggle">▾</span>
-      </div>
-      <div class="swimlane-body" id="sl-crit-body">`;
-    html+=critical.map(m=>`
-      <div class="msg-card" onclick="focusChannel('${m.channel||m.channel_id||''}','${m.risk}','${m.timestamp||m.time||''}')">
-        <div class="msg-card-top">
-          <span class="ch-name">${esc(m.channel||m.channel_id||'—')}</span>
-          <span class="msg-time">${m.timestamp?new Date(m.timestamp).toLocaleString():(m.time||'—')}</span>
-          ${dsBadge(m.dataset)}
-          ${m.is_processed?'<span style="font-size:9.5px;color:var(--green);font-family:\'IBM Plex Mono\',monospace">✓ indexed</span>':''}
+  const rmap = { critical: 'b-crit', high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
+
+  // Make sure the currently selected/focused channel is ALWAYS shown in the list
+  let displayChannels = [...channels];
+  if (msgSelectedChannelId && !displayChannels.some(c => (c.channel_id === msgSelectedChannelId || c.name === msgSelectedChannelId))) {
+    const activeCh = channelData.find(c => (c.channel_id === msgSelectedChannelId || c.name === msgSelectedChannelId));
+    if (activeCh) {
+      displayChannels.unshift(activeCh);
+    }
+  }
+
+  pickList.innerHTML = displayChannels.map(ch => {
+    const isAct = (ch.channel_id || ch.name) === msgSelectedChannelId;
+    return `
+      <div class="channel-pick-item ${isAct ? 'active' : ''}" data-id="${ch.channel_id || ch.name}">
+        <div class="channel-pick-name">${esc(ch.title || ch.name)}</div>
+        <div class="channel-pick-meta">
+          <span class="badge ${rmap[(ch.risk || '').toLowerCase()] || 'b-un'}">${ch.risk || 'medium'}</span>
+          <span>${ch.subs ? fmtN(ch.subs) + ' subs' : '—'}</span>
         </div>
-        <div class="msg-card-text">${esc(m.text||'—')}</div>
-        <div class="msg-card-footer">${msgFlags(m)}</div>
+      </div>
+    `;
+  }).join('');
+
+  pickList.querySelectorAll('.channel-pick-item').forEach(el => {
+    el.onclick = () => {
+      msgSelectChannel(el.dataset.id);
+    };
+  });
+}
+
+function msgFilterChannels() {
+  const q = (document.getElementById('msg-ch-search')?.value || '').toLowerCase();
+  const raw = channelData.length ? channelData : SCHAN;
+  const filtered = q
+    ? raw.filter(c => (c.title || '').toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q) || (c.username || '').toLowerCase().includes(q))
+    : raw.filter(c => ['critical', 'high', 'medium'].includes((c.risk || '').toLowerCase()));
+  renderExplorerChannelPicker(filtered);
+}
+
+async function msgSelectChannel(id) {
+  msgSelectedChannelId = id;
+  msgExplorerOffset = 0;
+
+  document.querySelectorAll('.channel-pick-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  const header = document.getElementById('msg-channel-header');
+  const msgWrap = document.getElementById('msg-list-wrap');
+  if (!header || !msgWrap) return;
+
+  header.innerHTML = `
+    <div class="skel" style="width:180px;height:20px;margin-bottom:10px"></div>
+    <div class="msg-header-meta">
+      <div class="skel" style="width:90px;height:16px;border-radius:8px"></div>
+      <div class="skel" style="width:56px;height:16px;border-radius:10px"></div>
+      <div class="skel" style="width:74px;height:16px"></div>
+    </div>
+  `;
+  msgWrap.innerHTML = `
+    <div class="loading-spinner"></div>
+    <div style="text-align:center;color:var(--faint);font-size:12px;margin-top:10px">Loading messages...</div>
+  `;
+
+  const ch = channelData.find(c => (c.channel_id === id || c.name === id)) || 
+             { title: id, name: id, risk: 'medium', subs: 0, content_flags: [], relevance_score: 0 };
+
+  const rmap = { critical: 'b-crit', high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
+  const flags = Array.isArray(ch.content_flags) ? ch.content_flags : (ch.content_flags ? JSON.parse(ch.content_flags) : []);
+
+  header.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start">
+      <h2>${esc(ch.title || ch.name)}</h2>
+      <button class="btn-action" onclick="exportMessages('${ch.channel_id || ch.name}')">↓ Export Channel CSV</button>
+    </div>
+    <div class="msg-header-meta" style="margin-top:6px">
+      ${ch.username ? `<span style="font-family:monospace;color:var(--blue)">@${esc(ch.username)}</span>` : ''}
+      <span class="badge ${rmap[(ch.risk || '').toLowerCase()] || 'b-un'}">${ch.risk || 'medium'}</span>
+      ${ch.relevance_score ? `<span class="flag-chip" style="border-radius:4px;background:rgba(91,159,255,.08);color:var(--blue);border:1px solid rgba(91,159,255,.2)">Score: ${ch.relevance_score.toFixed(3)}</span>` : ''}
+      <span>${ch.subs ? fmtN(ch.subs) + ' subscribers' : '0 subscribers'}</span>
+      ${flags.map(f => `<span class="flag-chip" style="background:rgba(255,147,64,.08);color:var(--orange);border:1px solid rgba(255,147,64,.2)">${esc(f.replace(/_/g, ' '))}</span>`).join('')}
+    </div>
+  `;
+
+  await msgExplorerLoadMessages(id, false);
+}
+
+async function msgExplorerLoadMessages(id, append = false) {
+  const msgWrap = document.getElementById('msg-list-wrap');
+  if (!msgWrap) return;
+
+  try {
+    const res = await fetch(`${API}/api/messages?channel_id=${encodeURIComponent(id)}&limit=${MSG_EXPLORER_PAGE_LIMIT}&offset=${msgExplorerOffset}`);
+    if (!res.ok) throw new Error('API failed');
+    const data = await res.json();
+    
+    const messages = data.messages || [];
+    const total = data.total || 0;
+
+    if (!append) {
+      if (!messages.length) {
+        msgWrap.innerHTML = `<div class="empty-state">No messages collected for this channel.</div>`;
+        return;
+      }
+      msgWrap.innerHTML = '';
+    } else {
+      const loadBtn = msgWrap.querySelector('.msg-load-more');
+      if (loadBtn) loadBtn.remove();
+    }
+
+    messages.forEach(m => {
+      const msgItem = document.createElement('div');
+      msgItem.className = `msg-item ${m.forwarded || m.is_forwarded ? 'forwarded' : ''}`;
+      msgItem.style.padding = '12px 14px';
+      msgItem.style.borderRadius = '6px';
+      msgItem.style.marginBottom = '6px';
+      msgItem.style.border = '1px solid var(--border)';
+      msgItem.style.background = 'var(--surface2)';
+      
+      const time = m.timestamp ? new Date(m.timestamp).toLocaleString() : (m.time || '');
+      const textHtml = m.text ? highlightMsgExplorerKeywords(esc(m.text)) : `<span style="color:var(--faint);font-style:italic">[No text content]</span>`;
+      
+      const kwMatches = parseArr(m.keyword_matches) || [];
+      const mentions = parseArr(m.extracted_mentions) || [];
+
+      let metaHtml = `
+        <div class="msg-meta" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          <span class="msg-time" style="color:var(--faint);font-size:11px">${time}</span>
+          ${m.forwarded || m.is_forwarded ? `<span class="fwd-badge" style="background:rgba(91,159,255,.1);color:var(--blue);font-size:10px;padding:2px 6px;border-radius:3px">Forwarded</span>` : ''}
+          ${m.media || m.has_media ? `<span class="fwd-badge" style="background:rgba(255,147,64,.1);color:var(--orange);font-size:10px;padding:2px 6px;border-radius:3px">${esc(m.media_type || 'media')}</span>` : ''}
+          ${kwMatches.length ? `<span class="flag-chip" style="background:rgba(180,125,255,.08);color:var(--purple);border:1px solid rgba(180,125,255,.18)">${kwMatches.length} keyword${kwMatches.length > 1 ? 's' : ''}</span>` : ''}
+          ${mentions.length ? `<span class="flag-chip" style="background:rgba(52,211,153,.08);color:var(--green);border:1px solid rgba(52,211,153,.18)">${mentions.length} mention${mentions.length > 1 ? 's' : ''}</span>` : ''}
+        </div>
+      `;
+
+      msgItem.innerHTML = `
+        ${metaHtml}
+        <div class="msg-card-text" style="font-size:13px;color:var(--text);line-height:1.55;margin:8px 0">${textHtml}</div>
         ${msgExtractedDetail(m)}
-      </div>`).join('');
-    html+=`</div></div>`;
-  }
+      `;
+      msgWrap.appendChild(msgItem);
+    });
 
-  if(high.length){
-    html+=`<div class="swimlane-section sl-high">
-      <div class="swimlane-header" onclick="toggleSwimlane('sl-high-body','sl-high-toggle')">
-        <span class="swimlane-label">⬤ High</span>
-        <span class="swimlane-count">${high.length}</span>
-        <span class="swimlane-toggle" id="sl-high-toggle">▾</span>
-      </div>
-      <div class="swimlane-body" id="sl-high-body">`;
-    html+=high.map(m=>`
-      <div class="msg-compact" onclick="focusChannel('${m.channel||m.channel_id||''}','${m.risk}','${m.timestamp||m.time||''}')">
-        <span class="msg-compact-channel">${esc(m.channel||m.channel_id||'—')}</span>
-        <div class="msg-compact-body">
-          <div class="msg-compact-text">${esc(m.text||'—')}</div>
-          <div class="msg-compact-meta">
-            <span class="msg-time">${m.timestamp?new Date(m.timestamp).toLocaleString():(m.time||'—')}</span>
-            ${msgFlags(m)}
-            ${dsBadge(m.dataset)}
-          </div>
-        </div>
-      </div>`).join('');
-    html+=`</div></div>`;
-  }
+    if (msgExplorerOffset + messages.length < total) {
+      const loadMoreContainer = document.createElement('div');
+      loadMoreContainer.className = 'msg-load-more';
+      loadMoreContainer.style.textAlign = 'center';
+      loadMoreContainer.style.padding = '12px 0';
+      loadMoreContainer.innerHTML = `
+        <button class="btn" id="msg-load-more-btn" style="width:220px">Load More (${total - (msgExplorerOffset + messages.length)} remaining)</button>
+      `;
+      msgWrap.appendChild(loadMoreContainer);
 
-  if(rest.length){
-    const shown=rest.slice(0,10);
-    const hidden=rest.slice(10);
-    html+=`<div class="swimlane-section sl-low">
-      <div class="swimlane-header" onclick="toggleSwimlane('sl-low-body','sl-low-toggle')">
-        <span class="swimlane-label">⬤ Medium / Low</span>
-        <span class="swimlane-count">${rest.length}</span>
-        <span class="swimlane-toggle collapsed" id="sl-low-toggle">▾</span>
-      </div>
-      <div class="swimlane-body" id="sl-low-body" style="display:none">`;
-    html+=shown.map(m=>`
-      <div class="msg-collapsed-row" onclick="focusChannel('${m.channel||m.channel_id||''}','${m.risk}','${m.timestamp||m.time||''}')">
-        <span class="msg-collapsed-channel">${esc(m.channel||m.channel_id||'—')}</span>
-        <span class="msg-collapsed-text">${esc(m.text||'—')}</span>
-        <span class="msg-time">${m.timestamp?new Date(m.timestamp).toLocaleDateString():(m.time||'')}</span>
-        ${dsBadge(m.dataset)}
-      </div>`).join('');
-    if(hidden.length) html+=`<div class="msg-show-more" onclick="expandLowRows(this,${JSON.stringify(hidden).replace(/"/g,'&quot;')})">Show ${hidden.length} more</div>`;
-    html+=`</div></div>`;
-  }
+      document.getElementById('msg-load-more-btn').onclick = () => {
+        msgExplorerOffset += MSG_EXPLORER_PAGE_LIMIT;
+        msgExplorerLoadMessages(id, true);
+      };
+    }
 
-  if(!html) html='<div style="padding:24px;text-align:center;color:var(--faint);font-size:13px">No messages match your filters</div>';
-  list.innerHTML=html;
+  } catch (err) {
+    console.error('Error loading messages:', err);
+    if (!append) {
+      msgWrap.innerHTML = `<div class="empty-state" style="color:var(--red)">Failed to load messages from database.</div>`;
+    }
+  }
 }
 
-function toggleSwimlane(bodyId,toggleId){
-  const body=document.getElementById(bodyId);
-  const tog=document.getElementById(toggleId);
-  if(!body) return;
-  const hidden=body.style.display==='none';
-  body.style.display=hidden?'':'none';
-  if(tog) tog.classList.toggle('collapsed',!hidden);
-}
-
-function expandLowRows(el,msgs){
-  const html=msgs.map(m=>`
-    <div class="msg-collapsed-row" onclick="focusChannel('${m.channel||m.channel_id||''}','${m.risk}','${m.timestamp||m.time||''}')">
-      <span class="msg-collapsed-channel">${esc(m.channel||m.channel_id||'—')}</span>
-      <span class="msg-collapsed-text">${esc(m.text||'—')}</span>
-      <span class="msg-time">${m.timestamp?new Date(m.timestamp).toLocaleDateString():(m.time||'')}</span>
-    </div>`).join('');
-  el.insertAdjacentHTML('beforebegin',html);
-  el.remove();
-}
-
-function setMsgFilter(f,el){
-  msgFilter=f;
-  document.querySelectorAll('.msg-search-row .filter-btn').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  renderMessages();
+function highlightMsgExplorerKeywords(text) {
+  return text.replace(MSG_EXP_KW_RE, m => `<span class="kw-highlight">${m}</span>`);
 }
 
 /* ── KEYWORDS ─────────────────────────────────── */
@@ -2194,8 +2578,8 @@ function exportChannels(){
   
   window.open(`${API}/api/export/channels?${params.toString()}`, '_blank');
 }
-function exportMessages(){
-  const channel = document.getElementById('msg-search')?.value || document.getElementById('export-msg-channel')?.value || '';
+function exportMessages(channelId){
+  const channel = channelId || document.getElementById('export-msg-channel')?.value || '';
   const start = document.getElementById('export-msg-start')?.value || '';
   const end = document.getElementById('export-msg-end')?.value || '';
   const flagged = msgFilter === 'flagged';
@@ -2362,8 +2746,9 @@ function updateCharts(){
 /* ══════════════════════════════════════════
    NETWORK MAP (D3)
 ══════════════════════════════════════════ */
-const NET={svg:null,g:null,width:0,height:500,simulation:null,zoom:null,tooltip:null,controlsReady:false};
+const NET={svg:null,g:null,width:0,height:500,simulation:null,zoom:null,tooltip:null,controlsReady:false,initialized:false,loading:false};
 let graphNodes=[],graphLinks=[];
+let netFetchPromise = null;
 
 async function netInit(){
   const badge=document.getElementById('net-badge');
@@ -2373,29 +2758,46 @@ async function netInit(){
   NET.width=wrap.clientWidth;
   NET.height=500;
   svgEl.attr('viewBox',`0 0 ${NET.width} ${NET.height}`);
-  svgEl.selectAll('*:not(defs)').remove();
+
+  if(NET.initialized){
+    return;
+  }
+  NET.initialized=true;
+  showNetLoader(true);
   if(!NET.tooltip) NET.tooltip=d3.select('#ntt');
   if(!NET.zoom){
     NET.zoom=d3.zoom().scaleExtent([0.06,8]).on('zoom',event=>{if(NET.g) NET.g.attr('transform',event.transform);});
     svgEl.call(NET.zoom).on('dblclick.zoom',null);
   }
   if(badge) badge.textContent='loading…';
-  try{
-    const response=await fetch(`${API}/api/network`);
-    if(!response.ok) throw new Error('fail');
-    netAPIData=await response.json();
-  }catch(err){
-    if(badge) badge.textContent='offline';
-    svgEl.append('text').attr('x',NET.width/2).attr('y',NET.height/2)
-      .attr('text-anchor','middle').attr('fill','#4a5068').attr('font-family','IBM Plex Mono, monospace')
-      .attr('font-size',12).text('Connect to API to load graph data.');
-    return;
+
+  if(!netAPIData){
+    if(!NET.loading){
+      NET.loading=true;
+      netFetchPromise = fetch(`${API}/api/network`)
+        .then(response=>{ if(!response.ok) throw new Error('fail'); return response.json(); })
+        .then(data=>{ netAPIData=data; NET.loading=false; return data; })
+        .catch(err=>{ NET.loading=false; throw err; });
+    }
+    try{
+      await netFetchPromise;
+    }catch(err){
+      NET.initialized=false;
+      if(badge) badge.textContent='offline';
+      svgEl.append('text').attr('x',NET.width/2).attr('y',NET.height/2)
+        .attr('text-anchor','middle').attr('fill','#4a5068').attr('font-family','IBM Plex Mono, monospace')
+        .attr('font-size',12).text('Connect to API to load graph data.');
+      showNetLoader(false);
+      return;
+    }
   }
+
   if(badge) badge.textContent=`${(netAPIData.nodes||[]).length} channels · ${(netAPIData.edges||[]).length} links`;
-  renderNetworkGraph();
+  const cache = loadNetworkLayoutCache();
+  renderNetworkGraph(cache);
 }
 
-function renderNetworkGraph(){
+function renderNetworkGraph(cache){
   const svgEl=d3.select('#net-svg');
   if(svgEl.empty()) return;
   NET.g=svgEl.append('g');
@@ -2408,6 +2810,19 @@ function renderNetworkGraph(){
 
   const maxMembers=d3.max(graphNodes,d=>d.member_count||0)||1;
   const getRadius=d=>4+((d.member_count||0)/maxMembers)*14;
+
+  if(cache && cache.nodes){
+    const positionMap = new Map(cache.nodes.map(n=>[n.id,n]));
+    graphNodes.forEach(d=>{
+      const saved = positionMap.get(d.channel_id);
+      if(saved){
+        d.x = saved.x;
+        d.y = saved.y;
+        d.vx = saved.vx;
+        d.vy = saved.vy;
+      }
+    });
+  }
 
   const recentNodes=graphNodes.filter(d=>d.is_recent);
   const pulseGroup=NET.g.append('g').attr('class','pulse-group');
@@ -2427,9 +2842,55 @@ function renderNetworkGraph(){
     .attr('stroke',d=>{if(d.edge_type==='mention') return '#818cf8';if(d.edge_type==='forward') return '#f472b6';return '#34d399';})
     .attr('stroke-opacity',.3).attr('stroke-width',d=>Math.max(1,Math.sqrt(d.weight||1)));
 
+  function getNodeFill(d) {
+    const colorMode = document.getElementById('node-color-select')?.value || 'category';
+    if (colorMode === 'category') {
+      return CEXP.COLORS[d.category] || '#9e9e9e';
+    } else {
+      if(d.risk_level==='critical') return '#ff4d5a';
+      if(d.risk_level==='high') return '#ff9340';
+      if(d.risk_level==='medium') return '#ffd452';
+      if(d.risk_level==='low') return '#3de888';
+      return '#4a5068';
+    }
+  }
+
+  function updateLegend() {
+    const colorMode = document.getElementById('node-color-select')?.value || 'category';
+    const legendDiv = document.querySelector('.graph-legend');
+    if (!legendDiv) return;
+    
+    let html = `<div class="card-title" style="margin-bottom:10px">Legend</div>`;
+    if (colorMode === 'category') {
+      for (const [cat, col] of Object.entries(CEXP.COLORS)) {
+        html += `<div class="legend-row"><span class="legend-circle" style="background:${col}"></span><span>${esc(cat)}</span></div>`;
+      }
+    } else {
+      html += `
+        <div class="legend-row"><span class="legend-circle" style="background:var(--red)"></span><span>Critical</span></div>
+        <div class="legend-row"><span class="legend-circle" style="background:var(--orange)"></span><span>High</span></div>
+        <div class="legend-row"><span class="legend-circle" style="background:var(--yellow)"></span><span>Medium</span></div>
+        <div class="legend-row"><span class="legend-circle" style="background:var(--green)"></span><span>Low</span></div>
+        <div class="legend-row"><span class="legend-circle" style="background:var(--surface3);border-color:var(--border2)"></span><span>Unknown</span></div>
+      `;
+    }
+    html += `
+      <div class="legend-divider"></div>
+      <div class="legend-row"><span class="legend-circle" style="background:transparent;border:2px solid var(--yellow);box-shadow:0 0 6px rgba(255,212,82,.3)"></span><span>Recently discovered</span></div>
+      <div class="legend-divider"></div>
+      <div class="legend-row"><span class="legend-bar" style="background:#818cf8;height:3px"></span><span>Mentions</span></div>
+      <div class="legend-row"><span class="legend-bar" style="background:#f472b6;height:3px"></span><span>Forwards</span></div>
+      <div class="legend-row"><span class="legend-bar" style="background:#34d399;height:3px"></span><span>Tracked link</span></div>
+    `;
+    legendDiv.innerHTML = html;
+  }
+
+  // Initialize Legend Natively
+  updateLegend();
+
   const node=NET.g.append('g').attr('class','nodes').selectAll('circle').data(graphNodes).enter().append('circle')
     .attr('r',d=>getRadius(d))
-    .attr('fill',d=>{if(d.risk_level==='critical') return '#ff4d5a';if(d.risk_level==='high') return '#ff9340';if(d.risk_level==='medium') return '#ffd452';if(d.risk_level==='low') return '#3de888';return '#4a5068';})
+    .attr('fill',d=>getNodeFill(d))
     .attr('stroke','#0c0d10').attr('stroke-width',1.5).attr('cursor','pointer')
     .call(d3.drag()
       .on('start',(event,d)=>{if(!event.active&&NET.simulation) NET.simulation.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
@@ -2438,10 +2899,10 @@ function renderNetworkGraph(){
     );
 
   const formatScore=(v,d=2)=>{const s=v!=null?Number(v):null;return s!=null&&!isNaN(s)?s.toFixed(d):'—';};
-  node.append('title').text(d=>`${d.title||d.channel_id}${d.is_recent?' ★ recently discovered':''}\n${d.risk_level} | score: ${formatScore(d.relevance_score)}`);
+  node.append('title').text(d=>`${d.title||d.channel_id}${d.is_recent?' ★ recently discovered':''}\n${d.category}\n${d.risk_level} | score: ${formatScore(d.relevance_score)}`);
 
   node.on('mouseover',(event,d)=>{
-    NET.tooltip.html(`<strong>${esc(d.title||d.channel_id)}</strong><br>${d.username?`@${esc(d.username)}<br>`:''}Risk: ${esc(d.risk_level)}<br>Subscribers: ${d.member_count?.toLocaleString()||'N/A'}<br>Discovered: ${d.discovered_at?new Date(d.discovered_at).toLocaleString():'Unknown'}`);
+    NET.tooltip.html(`<strong>${esc(d.title||d.channel_id)}</strong><br>${d.username?`@${esc(d.username)}<br>`:''}Category: ${esc(d.category)}<br>Risk: ${esc(d.risk_level)}<br>Subscribers: ${d.member_count?.toLocaleString()||'N/A'}`);
     NET.tooltip.style('left',`${event.offsetX+14}px`).style('top',`${event.offsetY-10}px`).classed('vis',true);
   }).on('mousemove',event=>{
     NET.tooltip.style('left',`${event.offsetX+14}px`).style('top',`${event.offsetY-10}px`);
@@ -2457,24 +2918,64 @@ function renderNetworkGraph(){
     pulseCircles.attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',d=>getRadius(d)+2);
   }
 
-  function restartSimulation(activeNodes,activeLinks){
+  function restartSimulation(activeNodes,activeLinks,preservePositions=false){
     if(NET.simulation) NET.simulation.stop();
-    NET.simulation=d3.forceSimulation(activeNodes)
+    const layoutStyle = document.getElementById('layout-style-select')?.value || 'standard';
+    const sim = d3.forceSimulation(activeNodes)
       .force('link',d3.forceLink(activeLinks).id(d=>d.channel_id).distance(65).strength(.35))
       .force('charge',d3.forceManyBody().strength(-160))
-      .force('center',d3.forceCenter(NET.width/2,NET.height/2))
-      .force('collide',d3.forceCollide(d=>getRadius(d)+4))
-      .alpha(.7).alphaDecay(.02).on('tick',ticked);
+      .force('collide',d3.forceCollide(d=>getRadius(d)+4));
+
+    if (layoutStyle === 'clustered') {
+      const centers = {
+        '18+ / Adult Content':    { x: NET.width * 0.25, y: NET.height * 0.35 },
+        'Crypto / Web3':          { x: NET.width * 0.75, y: NET.height * 0.35 },
+        'Scams & Fraud':          { x: NET.width * 0.25, y: NET.height * 0.75 },
+        'Academic / Universities':{ x: NET.width * 0.75, y: NET.height * 0.75 },
+        'News / OSINT / VPNs':    { x: NET.width * 0.5,  y: NET.height * 0.55 },
+        'General / Other':        { x: NET.width * 0.5,  y: NET.height * 0.2 }
+      };
+      sim.force('x', d3.forceX(d => (centers[d.category] || centers['General / Other']).x).strength(0.22));
+      sim.force('y', d3.forceY(d => (centers[d.category] || centers['General / Other']).y).strength(0.22));
+    } else if (layoutStyle === 'risk-clustered') {
+      const centers = {
+        critical:     { x: NET.width * 0.25, y: NET.height * 0.35 },
+        high:         { x: NET.width * 0.75, y: NET.height * 0.35 },
+        medium:       { x: NET.width * 0.25, y: NET.height * 0.75 },
+        low:          { x: NET.width * 0.75, y: NET.height * 0.75 },
+        unclassified: { x: NET.width * 0.5,  y: NET.height * 0.5 }
+      };
+      sim.force('x', d3.forceX(d => (centers[d.risk_level] || centers.unclassified).x).strength(0.22));
+      sim.force('y', d3.forceY(d => (centers[d.risk_level] || centers.unclassified).y).strength(0.22));
+    } else {
+      sim.force('center', d3.forceCenter(NET.width/2, NET.height/2));
+    }
+
+    if(preservePositions){
+      NET.simulation = sim.on('tick',ticked);
+      ticked();
+      sim.stop();
+    } else {
+      NET.simulation = sim.alpha(.7).alphaDecay(.02).on('tick',ticked).on('end',()=>{ saveNetworkLayoutCache(graphNodes,graphLinks); showNetLoader(false); });
+    }
   }
-  restartSimulation(graphNodes,graphLinks);
+  restartSimulation(graphNodes,graphLinks,!!cache);
+  showNetLoader(false);
 
   if(!NET.controlsReady){
     document.getElementById('zoom-in')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.scaleBy,1.4));
     document.getElementById('zoom-out')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.scaleBy,.72));
     document.getElementById('zoom-reset')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.transform,d3.zoomIdentity));
+    document.getElementById('node-color-select')?.addEventListener('change', () => {
+      updateLegend();
+      if (NET.g) {
+        NET.g.selectAll('.nodes circle').attr('fill', d => getNodeFill(d));
+      }
+    });
     document.querySelectorAll('.risk-toggle').forEach(cb=>cb.addEventListener('change',applyGraphFilters));
     document.getElementById('recent-only-toggle')?.addEventListener('change',applyGraphFilters);
     document.getElementById('active-only-toggle')?.addEventListener('change',applyGraphFilters);
+    document.getElementById('layout-style-select')?.addEventListener('change',applyGraphFilters);
     NET.controlsReady=true;
   }
 
@@ -2531,6 +3032,219 @@ function renderNetworkGraph(){
   }
 }
 
+/* ══════════════════════════════════════════
+   CLUSTER EXPLORER
+══════════════════════════════════════════ */
+const CEXP = {
+  COLORS: {
+    '18+ / Adult Content':   '#e91e63',
+    'Crypto / Web3':         '#ff9800',
+    'Scams & Fraud':         '#f44336',
+    'Academic / Universities':'#4caf50',
+    'News / OSINT / VPNs':   '#2196f3',
+    'General / Other':       '#9e9e9e'
+  },
+  data:            null,
+  filtered:        [],
+  activeCategory:  'all',
+  searchTerm:      ''
+};
+
+async function cexpLoad(){
+  try{
+    const r = await fetch(`${API}/api/cluster-explorer`);
+    if(!r.ok) throw new Error('not found');
+    CEXP.data = await r.json();
+    CEXP.filtered = CEXP.data.channels;
+    cexpUpdateStats();
+    cexpBuildLegend();
+    cexpBuildFilters();
+    cexpRenderCanvas();
+    cexpRenderGrid();
+    document.getElementById('cexp-badge').textContent =
+      `${CEXP.data.total_channels} channels · ${Object.keys(CEXP.data.categories).length} categories`;
+  } catch(e){
+    document.getElementById('cexp-badge').textContent = 'channel_clusters.json not found';
+    document.getElementById('cexpCanvas').style.display='none';
+  }
+}
+
+function cexpUpdateStats(){
+  if(!CEXP.data) return;
+  const total = document.getElementById('cexp-total');
+  const cats  = document.getElementById('cexp-cats');
+  const vis   = document.getElementById('cexp-visible');
+  if(total) total.textContent = CEXP.data.total_channels.toLocaleString();
+  if(cats)  cats.textContent  = Object.keys(CEXP.data.categories).length;
+  if(vis)   vis.textContent   = CEXP.filtered.length.toLocaleString();
+}
+
+function cexpBuildLegend(){
+  const el = document.getElementById('cexp-legend');
+  if(!el||!CEXP.data) return;
+  el.innerHTML = '';
+  for(const [cat, col] of Object.entries(CEXP.COLORS)){
+    if(!CEXP.data.categories[cat]) continue;
+    const item = document.createElement('div');
+    item.className = 'cexp-legend-item';
+    item.innerHTML = `<span class="cexp-legend-dot" style="background:${col};color:${col}"></span><span>${esc(cat)} <span style="color:var(--faint);font-family:'IBM Plex Mono',monospace;font-size:10px">(${CEXP.data.categories[cat]})</span></span>`;
+    el.appendChild(item);
+  }
+}
+
+function cexpBuildFilters(){
+  if(!CEXP.data) return;
+  const fg = document.getElementById('cexp-filter-group');
+  if(!fg) return;
+  fg.innerHTML = '<button class="filter-btn on" data-cexp-cat="all" onclick="cexpSetCategory(\'all\',this)">All</button>';
+  for(const cat of Object.keys(CEXP.COLORS)){
+    if(!CEXP.data.categories[cat]) continue;
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.cexpCat = cat;
+    btn.textContent = cat;
+    btn.onclick = function(){ cexpSetCategory(cat, this); };
+    fg.appendChild(btn);
+  }
+}
+
+function cexpSetCategory(cat, el){
+  CEXP.activeCategory = cat;
+  document.querySelectorAll('[data-cexp-cat]').forEach(b=>{
+    b.classList.toggle('on', b.dataset.cexpCat === cat);
+  });
+  cexpApplyFilters();
+}
+
+function cexpApplyFilters(){
+  if(!CEXP.data) return;
+  const term = (document.getElementById('cexp-search')?.value || '').toLowerCase();
+  CEXP.searchTerm = term;
+  CEXP.filtered = CEXP.data.channels.filter(ch=>{
+    const catOk  = CEXP.activeCategory === 'all' || ch.category === CEXP.activeCategory;
+    const termOk = !term ||
+      (ch.title  && ch.title.toLowerCase().includes(term)) ||
+      (ch.username && ch.username.toLowerCase().includes(term));
+    return catOk && termOk;
+  });
+  cexpUpdateStats();
+  cexpRenderCanvas();
+  cexpRenderGrid();
+}
+
+function cexpRenderCanvas(){
+  const canvas = document.getElementById('cexpCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<W;i+=50){ ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke(); }
+  for(let i=0;i<H;i+=50){ ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke(); }
+
+  // Faded dots for all channels
+  if(CEXP.data){
+    CEXP.data.channels.forEach(ch=>{
+      const col = CEXP.COLORS[ch.category] || '#9e9e9e';
+      const x = ch.x * W, y = ch.y * H;
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // Active filtered dots
+  CEXP.filtered.forEach(ch=>{
+    const col = CEXP.COLORS[ch.category] || '#9e9e9e';
+    const x = ch.x * W, y = ch.y * H;
+    // Glow
+    const grad = ctx.createRadialGradient(x,y,0,x,y,14);
+    grad.addColorStop(0, col+'55');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2); ctx.fill();
+    // Core dot
+    ctx.fillStyle  = col;
+    ctx.strokeStyle= col+'99';
+    ctx.lineWidth  = 1.5;
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+}
+
+function cexpRenderGrid(){
+  // No-op: grid removed to keep visualization clean and responsive!
+}
+
+function cexpFmt(n){
+  if(!n) return 'N/A';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+
+// Canvas tooltip and click handler
+(function(){
+  const canvasEl = document.getElementById('cexpCanvas');
+  const ttEl     = document.getElementById('cexpTooltip');
+  if(!canvasEl||!ttEl) return;
+
+  canvasEl.addEventListener('mousemove', e=>{
+    if(!CEXP.filtered.length) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const W  = rect.width, H = rect.height;
+    const found = CEXP.filtered.find(ch=>{
+      const dx = ch.x*W - mx, dy = ch.y*H - my;
+      return Math.sqrt(dx*dx+dy*dy) < 14;
+    });
+    if(found){
+      canvasEl.style.cursor = 'pointer';
+      ttEl.style.display = 'block';
+      ttEl.style.left    = (e.clientX+16)+'px';
+      ttEl.style.top     = (e.clientY+16)+'px';
+      ttEl.querySelector('.cexp-tt-title').textContent = found.title;
+      ttEl.querySelector('.cexp-tt-cat').textContent   = found.category;
+      ttEl.querySelector('.cexp-tt-stats').innerHTML   =
+        `Subscribers: ${cexpFmt(found.member_count)}<br>Messages: ${cexpFmt(found.message_count)}<br>Risk: ${found.risk_level||'Unknown'}`;
+    } else {
+      canvasEl.style.cursor = 'crosshair';
+      ttEl.style.display = 'none';
+    }
+  });
+
+  canvasEl.addEventListener('click', e=>{
+    if(!CEXP.filtered.length) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const W  = rect.width, H = rect.height;
+    const found = CEXP.filtered.find(ch=>{
+      const dx = ch.x*W - mx, dy = ch.y*H - my;
+      return Math.sqrt(dx*dx+dy*dy) < 14;
+    });
+    if(found){
+      focusChannel(found.title, found.risk_level || 'medium', `${cexpFmt(found.member_count)} subs`);
+    }
+  });
+
+  canvasEl.addEventListener('mouseleave', ()=>{ ttEl.style.display='none'; });
+})();
+
+// Re-render canvas on resize (only if network tab active)
+const _cexpResizeObs = new ResizeObserver(()=>{
+  if(document.getElementById('panel-network')?.classList.contains('active')) cexpRenderCanvas();
+});
+const _cexpCanvasWrap = document.querySelector('.cexp-canvas-wrap');
+if(_cexpCanvasWrap) _cexpResizeObs.observe(_cexpCanvasWrap);
+
 /* ── UTILS ────────────────────────────────────── */
 function parseArr(v){
   if(!v) return[];
@@ -2541,12 +3255,68 @@ function esc(v){
   if(v==null) return'';
   return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+function showNetLoader(show){
+  const el=document.getElementById('net-loader');
+  if(!el) return;
+  el.style.display = show ? 'flex' : 'none';
+  if(!show) el.classList.add('hidden');
+  else el.classList.remove('hidden');
+}
+function loadNetworkLayoutCache(){
+  if(typeof localStorage === 'undefined' || !netAPIData) return null;
+  try{
+    const raw = localStorage.getItem(NETWORK_CACHE_KEY);
+    if(!raw) return null;
+    const cache = JSON.parse(raw);
+    if(!cache.meta || !Array.isArray(cache.nodes)) return null;
+    if(cache.meta.node_count !== (netAPIData.nodes||[]).length) return null;
+    if(cache.meta.link_count !== (netAPIData.edges||[]).length) return null;
+    return cache;
+  }catch{
+    return null;
+  }
+}
+function saveNetworkLayoutCache(nodes, links){
+  if(typeof localStorage === 'undefined') return;
+  try{
+    const payload = {
+      meta: {
+        node_count: nodes.length,
+        link_count: links.length,
+        timestamp: Date.now()
+      },
+      nodes: nodes.map(d=>({id:d.channel_id,x:d.x,y:d.y,vx:d.vx,vy:d.vy}))
+    };
+    localStorage.setItem(NETWORK_CACHE_KEY, JSON.stringify(payload));
+  }catch{}
+}
 function showNotifications(){
   alert('Alerts:\n• New critical actor detected\n• High-risk channel activity spike\n• New keyword cluster emerging');
 }
 
-window.addEventListener('resize',()=>{if(document.getElementById('panel-network').classList.contains('active')) netInit();});
-document.addEventListener('DOMContentLoaded',()=>fetchAll());
+window.addEventListener('resize',()=>{
+  if(!document.getElementById('panel-network')?.classList.contains('active')) return;
+  const wrap=document.querySelector('.graph-canvas-wrap');
+  const svgEl=d3.select('#net-svg');
+  if(wrap && svgEl.size()){
+    NET.width = wrap.clientWidth;
+    svgEl.attr('viewBox',`0 0 ${NET.width} ${NET.height}`);
+  }
+  if(!NET.initialized){
+    netInit();
+  }
+});
+document.addEventListener('DOMContentLoaded',()=>{ fetchAll(); cexpLoad(); });
+
+// Also init cluster explorer and network when switching to Network tab
+const _origSwitchTab = switchTab;
+switchTab = function(id, el){
+  _origSwitchTab(id, el);
+  if(id === 'network'){
+    setTimeout(()=>{ if(CEXP.data) cexpRenderCanvas(); else cexpLoad(); }, 120);
+    if(netAPIData) netInit();
+  }
+};
 </script>
 </body>
 </html>

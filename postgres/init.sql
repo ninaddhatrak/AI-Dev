@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS channels (
     username            TEXT,
     title               TEXT NOT NULL,
     channel_type        TEXT NOT NULL,
+    category            TEXT,
     description         TEXT,
     member_count        INTEGER,
     message_count       INTEGER,

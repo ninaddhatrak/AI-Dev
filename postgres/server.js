@@ -1,6 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,7 +14,7 @@ app.use(express.json());
 // Database connection
 const pool = new Pool({
   host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'postgres' : 'localhost'),
-  port: process.env.DB_PORT || 5434,
+  port: process.env.DB_PORT || 5433,
   database: process.env.DB_NAME || 'harm_tracker',
   user: process.env.DB_USER || 'tracker',
   password: process.env.DB_PASSWORD || 'tracker_pw',
@@ -96,7 +98,7 @@ app.get('/api/stats', async (req, res) => {
 // GET /api/channels - List all channels with optional filtering
 app.get('/api/channels', async (req, res) => {
   try {
-    const { risk, search, limit = 100, offset = 0 } = req.query;
+    const { risk, search, limit = 500, offset = 0 } = req.query;
 
     let query = `
       SELECT 
@@ -108,7 +110,11 @@ app.get('/api/channels', async (req, res) => {
         discovered_at,
         last_activity,
         risk_level,
-        is_active
+        is_active,
+        relevance_score,
+        is_dead_end,
+        content_flags,
+        discovery_method
       FROM channels
       WHERE 1=1
     `;
@@ -134,13 +140,20 @@ app.get('/api/channels', async (req, res) => {
 
     // Transform to match dashboard expected format
     const channels = result.rows.map(c => ({
-      name: c.username || `@${c.channel_id}`,
+      channel_id: c.channel_id,
+      username: c.username,
+      title: c.title,
+      name: c.username ? `@${c.username}` : (c.title || `@${c.channel_id}`),
       category: c.channel_type || 'Uncategorized',
       subs: c.member_count || 0,
       created: c.discovered_at ? new Date(c.discovered_at).toLocaleString('en-US', { month: 'short', year: 'numeric' }) : 'Unknown',
       lastActive: c.last_activity ? getTimeAgo(c.last_activity) : 'Unknown',
       risk: c.risk_level?.toLowerCase() || 'medium',
-      status: c.is_active ? 'Active' : 'Banned'
+      status: c.is_active ? 'Active' : 'Banned',
+      relevance_score: c.relevance_score != null ? Number(c.relevance_score) : null,
+      is_dead_end: c.is_dead_end,
+      content_flags: c.content_flags || [],
+      discovery_method: c.discovery_method || 'unknown'
     }));
 
     res.json(channels);
@@ -149,6 +162,47 @@ app.get('/api/channels', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch channels' });
   }
 });
+
+// GET /api/channels/:channel_id - Get single channel details
+app.get('/api/channels/:channel_id', async (req, res) => {
+  try {
+    const { channel_id } = req.params;
+    const result = await pool.query(`
+      SELECT 
+        channel_id, username, title, channel_type, description, 
+        member_count, discovered_at, last_activity, risk_level, 
+        is_active, relevance_score, is_dead_end, content_flags, discovery_method
+      FROM channels
+      WHERE channel_id = $1 OR username = $1
+    `, [channel_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    const c = result.rows[0];
+    res.json({
+      channel_id: c.channel_id,
+      username: c.username,
+      title: c.title,
+      channel_type: c.channel_type || 'Uncategorized',
+      description: c.description || '',
+      member_count: c.member_count || 0,
+      discovered_at: c.discovered_at,
+      last_activity: c.last_activity,
+      risk_level: c.risk_level?.toLowerCase() || 'medium',
+      is_active: c.is_active,
+      relevance_score: c.relevance_score != null ? Number(c.relevance_score) : null,
+      is_dead_end: c.is_dead_end,
+      content_flags: c.content_flags || [],
+      discovery_method: c.discovery_method || 'unknown'
+    });
+  } catch (err) {
+    console.error('Get channel error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch channel details' });
+  }
+});
+
 
 // GET /api/keywords - Keyword frequency data
 app.get('/api/keywords', async (req, res) => {
@@ -202,6 +256,7 @@ app.get('/api/network', async (req, res) => {
         channel_id,
         username,
         title,
+        channel_type,
         member_count,
         risk_level,
         COALESCE(relevance_score::double precision, NULL) AS relevance_score,
@@ -218,30 +273,35 @@ app.get('/api/network', async (req, res) => {
         FROM edges
       ), forwarded AS (
         SELECT
-          channel_id AS source_channel_id,
-          forward_from_channel_id AS target_channel_id,
+          m.channel_id AS source_channel_id,
+          c.channel_id AS target_channel_id,
           COUNT(*) AS weight,
           'forward' AS edge_type
-        FROM messages
-        WHERE forward_from_channel_id IS NOT NULL
-        GROUP BY channel_id, forward_from_channel_id
+        FROM messages m
+        JOIN channels c ON REPLACE(REPLACE(m.forward_from_channel_id, '-100', ''), '-', '') = c.channel_id
+        WHERE m.forward_from_channel_id IS NOT NULL
+        GROUP BY m.channel_id, c.channel_id
       ), linked AS (
         SELECT
-          channel_id AS source_channel_id,
-          jsonb_array_elements_text(linked_channels) AS target_channel_id,
+          c1.channel_id AS source_channel_id,
+          c2.channel_id AS target_channel_id,
           1 AS weight,
           'linked' AS edge_type
-        FROM channels
-        WHERE jsonb_typeof(linked_channels) = 'array'
+        FROM channels c1
+        CROSS JOIN LATERAL jsonb_array_elements_text(c1.linked_channels) AS raw_link
+        JOIN channels c2 ON REPLACE(REPLACE(raw_link, '-100', ''), '-', '') = c2.channel_id OR REPLACE(raw_link, '@', '') = c2.username
+        WHERE jsonb_typeof(c1.linked_channels) = 'array'
       ), mentions AS (
         SELECT
-          channel_id AS source_channel_id,
-          jsonb_array_elements_text(extracted_mentions) AS target_channel_id,
+          m.channel_id AS source_channel_id,
+          c.channel_id AS target_channel_id,
           COUNT(*) AS weight,
           'mention' AS edge_type
-        FROM messages
-        WHERE jsonb_typeof(extracted_mentions) = 'array'
-        GROUP BY channel_id, target_channel_id
+        FROM messages m
+        CROSS JOIN LATERAL jsonb_array_elements_text(m.extracted_mentions) AS raw_mention
+        JOIN channels c ON REPLACE(raw_mention, '@', '') = c.username
+        WHERE jsonb_typeof(m.extracted_mentions) = 'array'
+        GROUP BY m.channel_id, c.channel_id
       )
       SELECT * FROM stored_edges
       UNION ALL
@@ -258,6 +318,7 @@ app.get('/api/network', async (req, res) => {
       channel_id: n.channel_id,
       username: n.username,
       title: n.title,
+      category: n.channel_type || 'General / Other',
       member_count: n.member_count || 0,
       risk_level: n.risk_level?.toLowerCase() || 'unclassified',
       relevance_score: n.relevance_score != null ? Number(n.relevance_score) : null,
@@ -325,35 +386,59 @@ app.get('/api/actors', async (req, res) => {
 // GET /api/messages - List all messages with channel info
 app.get('/api/messages', async (req, res) => {
   try {
-    const { limit = 20000, offset = 0 } = req.query;
-    const countResult = await pool.query(`SELECT COUNT(*) AS total_messages FROM messages`);
+    const { limit = 500, offset = 0, channel_id } = req.query;
+    
+    let countQuery = `SELECT COUNT(*) AS total_messages FROM messages`;
+    let countParams = [];
+    if (channel_id) {
+      countQuery += ` WHERE channel_id = $1`;
+      countParams.push(channel_id);
+    }
+    const countResult = await pool.query(countQuery, countParams);
     const totalMessages = parseInt(countResult.rows[0].total_messages, 10) || 0;
 
-    const result = await pool.query(`
+    let query = `
       SELECT 
+        m.message_id,
         m.text,
         m.timestamp,
         m.is_forwarded,
         m.has_media,
+        m.media_type,
         m.content_flags,
+        m.keyword_matches,
+        m.extracted_mentions,
         c.username,
         c.channel_id,
         c.risk_level
       FROM messages m
       JOIN channels c ON m.channel_id = c.channel_id
-      ORDER BY m.timestamp DESC
-      LIMIT $1 OFFSET $2
-    `, [parseInt(limit), parseInt(offset)]);
+    `;
+    const params = [parseInt(limit), parseInt(offset)];
+    let paramIndex = 3;
+    if (channel_id) {
+      query += ` WHERE m.channel_id = $${paramIndex}`;
+      params.push(channel_id);
+      paramIndex++;
+    }
+    query += ` ORDER BY m.timestamp DESC LIMIT $1 OFFSET $2`;
+
+    const result = await pool.query(query, params);
 
     const messages = result.rows.map(m => ({
+      message_id: m.message_id,
       channel: m.username ? `@${m.username}` : `@${m.channel_id}`,
+      channel_id: m.channel_id,
       text: m.text || '',
       time: getTimeAgo(m.timestamp),
       timestamp: m.timestamp,
       risk: m.risk_level?.toLowerCase() || 'medium',
       flagged: Array.isArray(m.content_flags) ? m.content_flags.length > 0 : (m.content_flags && m.content_flags !== '[]'),
       forwarded: m.is_forwarded,
-      media: m.has_media
+      media: m.has_media,
+      media_type: m.media_type,
+      keyword_matches: m.keyword_matches,
+      extracted_mentions: m.extracted_mentions
     }));
 
     res.json({ total: totalMessages, messages });
@@ -514,6 +599,23 @@ app.get('/api/export/messages', async (req, res) => {
     console.error('Export messages error:', err.message);
     res.status(500).json({ error: 'Failed to export messages' });
   }
+});
+
+// GET /api/cluster-explorer - Serve channel_clusters.json for the cluster explorer UI
+app.get('/api/cluster-explorer', (req, res) => {
+  const filePath = path.join(__dirname, 'channel_clusters.json');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('cluster-explorer: could not read channel_clusters.json:', err.message);
+      return res.status(404).json({ error: 'channel_clusters.json not found' });
+    }
+    try {
+      res.json(JSON.parse(data));
+    } catch (parseErr) {
+      console.error('cluster-explorer: JSON parse error:', parseErr.message);
+      res.status(500).json({ error: 'Failed to parse channel_clusters.json' });
+    }
+  });
 });
 
 // GET /api/health - Health check
