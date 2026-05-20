@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: signalforge-api
+    container_name: lumen-api
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

@@ -175,11 +175,11 @@ app.get('/api/channels/:channel_id', async (req, res) => {
       FROM channels
       WHERE channel_id = $1 OR username = $1
     `, [channel_id]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Channel not found' });
     }
-    
+
     const c = result.rows[0];
     res.json({
       channel_id: c.channel_id,
@@ -387,7 +387,7 @@ app.get('/api/actors', async (req, res) => {
 app.get('/api/messages', async (req, res) => {
   try {
     const { limit = 500, offset = 0, channel_id } = req.query;
-    
+
     let countQuery = `SELECT COUNT(*) AS total_messages FROM messages`;
     let countParams = [];
     if (channel_id) {
@@ -520,7 +520,7 @@ app.get('/api/export/channels', async (req, res) => {
     const result = await pool.query(query, params);
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="signalforge_channels_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="lumen_channels_${new Date().toISOString().split('T')[0]}.csv"`);
 
     let csv = 'Channel ID,Username,Title,Type,Subscribers,Discovered,Last Activity,Risk,Status\n';
     for (const r of result.rows) {
@@ -579,7 +579,7 @@ app.get('/api/export/messages', async (req, res) => {
     const result = await pool.query(query, params);
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="signalforge_messages_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="lumen_messages_${new Date().toISOString().split('T')[0]}.csv"`);
 
     let csv = 'Channel,Text,Timestamp,Risk,Forwarded,Media,Flags\n';
     for (const r of result.rows) {
@@ -648,5 +648,5 @@ function getTimeAgo(date) {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 SignalForge API running on port ${PORT}`);
+  console.log(`🚀 Lumen API running on port ${PORT}`);
 });

@@ -1,4 +1,4 @@
-# SignalForge Dashboard
+# Lumen Dashboard
 
 Investigative dashboard for tracking harmful Telegram channels, connected to a PostgreSQL database via a REST API.
 
@@ -6,7 +6,7 @@ Investigative dashboard for tracking harmful Telegram channels, connected to a P
 
 ```
 ┌─────────────────────────┐     ┌─────────────────────────┐     ┌──────────────────┐
-│  signalforge-dashboard │ ──▶ │   Express API (Node.js) │ ──▶ │  PostgreSQL DB   │
+│  lumen-dashboard │ ──▶ │   Express API (Node.js) │ ──▶ │  PostgreSQL DB   │
 │        (HTML/JS)         │     │      server.js:3000    │     │  harm_tracker   │
 └─────────────────────────┘     └─────────────────────────┘     └──────────────────┘
 ```
@@ -44,7 +44,7 @@ The API will start on `http://localhost:3000`.
 
 ### 3. Open the Dashboard
 
-Open `signalforge-dashboard.html` in a web browser. The dashboard will automatically fetch data from the API.
+Open `lumen-dashboard.html` in a web browser. The dashboard will automatically fetch data from the API.
 
 ## API Endpoints
 
@@ -150,7 +150,7 @@ TGBot/
 ├── Dockerfile            # API container image
 ├── docker-compose.yml    # Docker orchestration
 ├── init.sql              # Database schema
-├── signalforge-dashboard.html  # Dashboard UI
+├── lumen-dashboard.html  # Dashboard UI
 └── pgdata/               # PostgreSQL data volume
 ```
 
