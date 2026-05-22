@@ -20,6 +20,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'tracker_pw',
 });
 
+function normalizeRisk(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return v === 'critical' ? 'high' : v;
+}
+
 // Test database connection
 pool.query('SELECT NOW()')
   .then(() => console.log('✅ Connected to PostgreSQL'))
@@ -36,7 +41,8 @@ app.get('/api/stats', async (req, res) => {
     const channelResult = await pool.query(`
       SELECT 
         COUNT(*) as total_channels,
-        COUNT(*) FILTER (WHERE risk_level = 'high' OR risk_level = 'critical') as high_risk,
+        COUNT(*) FILTER (WHERE risk_level = 'critical') as critical_risk,
+        COUNT(*) FILTER (WHERE risk_level = 'high') as high_risk,
         COUNT(*) FILTER (WHERE risk_level = 'medium') as medium_risk,
         COUNT(*) FILTER (WHERE risk_level = 'low') as low_risk,
         COUNT(*) FILTER (WHERE risk_level = 'unclassified') as unclassified_risk,
@@ -46,7 +52,8 @@ app.get('/api/stats', async (req, res) => {
     `);
     const cr = channelResult.rows[0];
     stats.totalChannels = parseInt(cr.total_channels) || 0;
-    stats.highRisk = parseInt(cr.high_risk) || 0;
+    stats.highRisk = (parseInt(cr.high_risk) || 0) + (parseInt(cr.critical_risk) || 0);
+    stats.criticalRisk = 0;
     stats.mediumRisk = parseInt(cr.medium_risk) || 0;
     stats.lowRisk = parseInt(cr.low_risk) || 0;
     stats.unclassifiedRisk = parseInt(cr.unclassified_risk) || 0;
@@ -123,7 +130,7 @@ app.get('/api/channels', async (req, res) => {
 
     if (risk && risk !== 'all') {
       query += ` AND risk_level = $${paramIndex}`;
-      params.push(risk);
+      params.push(normalizeRisk(risk));
       paramIndex++;
     }
 
@@ -145,10 +152,10 @@ app.get('/api/channels', async (req, res) => {
       title: c.title,
       name: c.username ? `@${c.username}` : (c.title || `@${c.channel_id}`),
       category: c.channel_type || 'Uncategorized',
-      subs: c.member_count || 0,
+      subs: c.member_count != null ? c.member_count : null,
       created: c.discovered_at ? new Date(c.discovered_at).toLocaleString('en-US', { month: 'short', year: 'numeric' }) : 'Unknown',
       lastActive: c.last_activity ? getTimeAgo(c.last_activity) : 'Unknown',
-      risk: c.risk_level?.toLowerCase() || 'medium',
+      risk: normalizeRisk(c.risk_level) || 'medium',
       status: c.is_active ? 'Active' : 'Banned',
       relevance_score: c.relevance_score != null ? Number(c.relevance_score) : null,
       is_dead_end: c.is_dead_end,
@@ -187,10 +194,10 @@ app.get('/api/channels/:channel_id', async (req, res) => {
       title: c.title,
       channel_type: c.channel_type || 'Uncategorized',
       description: c.description || '',
-      member_count: c.member_count || 0,
+      member_count: c.member_count != null ? c.member_count : null,
       discovered_at: c.discovered_at,
       last_activity: c.last_activity,
-      risk_level: c.risk_level?.toLowerCase() || 'medium',
+      risk_level: normalizeRisk(c.risk_level) || 'medium',
       is_active: c.is_active,
       relevance_score: c.relevance_score != null ? Number(c.relevance_score) : null,
       is_dead_end: c.is_dead_end,
@@ -319,8 +326,8 @@ app.get('/api/network', async (req, res) => {
       username: n.username,
       title: n.title,
       category: n.channel_type || 'General / Other',
-      member_count: n.member_count || 0,
-      risk_level: n.risk_level?.toLowerCase() || 'unclassified',
+      member_count: n.member_count != null ? n.member_count : null,
+      risk_level: normalizeRisk(n.risk_level) || 'unclassified',
       relevance_score: n.relevance_score != null ? Number(n.relevance_score) : null,
       content_flags: n.content_flags,
       discovered_at: n.discovered_at,
@@ -432,7 +439,7 @@ app.get('/api/messages', async (req, res) => {
       text: m.text || '',
       time: getTimeAgo(m.timestamp),
       timestamp: m.timestamp,
-      risk: m.risk_level?.toLowerCase() || 'medium',
+      risk: normalizeRisk(m.risk_level) || 'medium',
       flagged: Array.isArray(m.content_flags) ? m.content_flags.length > 0 : (m.content_flags && m.content_flags !== '[]'),
       forwarded: m.is_forwarded,
       media: m.has_media,
@@ -468,8 +475,7 @@ app.get('/api/timeline', async (req, res) => {
       date: r.discovered_at,
       title: r.title,
       description: `${r.channel_type} channel discovered`,
-      type: r.risk_level?.toLowerCase() === 'critical' ? 'danger' :
-        r.risk_level?.toLowerCase() === 'high' ? 'warn' : 'info'
+      type: normalizeRisk(r.risk_level) === 'high' ? 'warn' : 'info'
     }));
 
     res.json(timeline);
@@ -495,7 +501,7 @@ app.get('/api/export/channels', async (req, res) => {
 
     if (risk && risk !== 'all') {
       query += ` AND risk_level = $${paramIndex++}`;
-      params.push(risk);
+      params.push(normalizeRisk(risk));
     }
     if (search) {
       query += ` AND (title ILIKE $${paramIndex} OR username ILIKE $${paramIndex})`;
@@ -532,7 +538,7 @@ app.get('/api/export/channels', async (req, res) => {
         csvEscape(r.member_count),
         csvEscape(r.discovered_at ? r.discovered_at.toISOString() : ''),
         csvEscape(r.last_activity ? r.last_activity.toISOString() : ''),
-        csvEscape(r.risk_level),
+        csvEscape(normalizeRisk(r.risk_level)),
         r.is_active ? 'Active' : 'Banned'
       ].join(',') + '\n';
     }
@@ -588,7 +594,7 @@ app.get('/api/export/messages', async (req, res) => {
         csvEscape(r.username || r.channel_id),
         csvEscape(r.text),
         csvEscape(r.timestamp ? r.timestamp.toISOString() : ''),
-        csvEscape(r.risk_level),
+        csvEscape(normalizeRisk(r.risk_level)),
         r.is_forwarded ? 'Yes' : 'No',
         r.has_media ? 'Yes' : 'No',
         csvEscape(flags)

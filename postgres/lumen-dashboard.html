@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lumen — Intelligence Platform</title>
+<title>Lumen - Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -57,10 +57,73 @@
   --r-xs:      5px;
   --topbar-h:  50px;
 
+  /* Graph / canvas backgrounds */
+  --graph-bg:      #050710;
+  --graph-overlay: rgba(12,13,16,.88);
+  --panel-bg:      #161820;
+  --panel-alt:     #1c1f2a;
+  --panel-strong:  #222535;
+  --topbar-bg:     rgba(22,24,32,.9);
+
+  --info-bg:       var(--surface2);
+  --info-text:     var(--text);
+  --info-border:   var(--border2);
+
   /* Dataset badge colors */
   --ds-a: #5b9fff;
   --ds-b: #b47dff;
   --ds-c: #3de888;
+}
+
+body.light-theme {
+  --bg:        #f5f7fb;
+  --bg2:       #ffffff;
+  --surface:   #ffffff;
+  --surface2:  #f4f6fb;
+  --surface3:  #eef1f7;
+  --border:    rgba(15,23,42,.08);
+  --border2:   rgba(15,23,42,.12);
+  --border3:   rgba(15,23,42,.16);
+
+  --text:      #101828;
+  --text2:     #334155;
+  --muted:     #64748b;
+  --faint:     #94a3b8;
+
+  --red:       #c92a33;
+  --red-soft:  rgba(201,42,51,.1);
+  --red-glow:  rgba(201,42,51,.2);
+  --red-b:     rgba(201,42,51,.2);
+
+  --orange:    #e67700;
+  --orange-soft: rgba(230,119,0,.08);
+  --orange-b:  rgba(230,119,0,.18);
+
+  --yellow:    #b78600;
+  --yellow-soft: rgba(183,134,0,.08);
+  --yellow-b:  rgba(183,134,0,.18);
+
+  --green:     #15803d;
+  --green-soft: rgba(21,128,61,.08);
+  --green-b:   rgba(21,128,61,.18);
+
+  --blue:      #2563eb;
+  --blue-soft: rgba(37,99,235,.08);
+  --blue-mid:  rgba(37,99,235,.2);
+
+  --purple:    #8b5cf6;
+  --purple-soft: rgba(139,92,246,.1);
+
+  --panel-bg:      #ffffff;
+  --panel-alt:     #f4f6fb;
+  --panel-strong:  #eef1f7;
+  --topbar-bg:     rgba(255,255,255,.9);
+  --graph-bg:      #f8fafc;
+  --graph-overlay: rgba(255,255,255,.92);
+
+  --info-bg:       var(--surface2);
+  --info-text:     var(--text);
+  --info-border:   var(--border2);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -249,7 +312,7 @@ body {
 
 .topbar {
   height: var(--topbar-h);
-  background: rgba(22,24,32,.9);
+  background: var(--topbar-bg);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -496,19 +559,19 @@ body {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px; border-radius: 3px 0 0 3px;
 }
-.triage-item.t-critical::before { background: var(--red); box-shadow: 2px 0 8px var(--red-glow); }
+.triage-item.t-critical::before { background: var(--orange); }
 .triage-item.t-high::before    { background: var(--orange); }
 .triage-item.t-medium::before  { background: var(--yellow); }
 .triage-item.t-info::before    { background: var(--blue); }
 .triage-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,.3); border-color: var(--border2); }
 .triage-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.triage-item.t-critical .triage-dot { background: var(--red); animation: pulse-red 2s ease-in-out infinite; }
+.triage-item.t-critical .triage-dot { background: var(--orange); }
 .triage-item.t-high .triage-dot    { background: var(--orange); }
 .triage-item.t-medium .triage-dot  { background: var(--yellow); }
 .triage-item.t-info .triage-dot    { background: var(--blue); }
 .triage-body { flex: 1; min-width: 0; }
 .triage-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.triage-item.t-critical .triage-title { color: var(--red); }
+.triage-item.t-critical .triage-title { color: var(--orange); }
 .triage-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 .triage-action {
   font-size: 11px; color: var(--blue); font-weight: 500; white-space: nowrap;
@@ -571,6 +634,7 @@ body {
 .b-med    { background: var(--yellow-soft); color: var(--yellow); border-color: var(--yellow-b); }
 .b-low    { background: var(--green-soft);  color: var(--green);  border-color: var(--green-b); }
 .b-un     { background: rgba(120,128,160,.08); color: var(--muted); border-color: var(--border); }
+.b-crit   { background: var(--orange-soft); color: var(--orange); border-color: var(--orange-b); }
 
 .risk-pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -639,6 +703,35 @@ body {
 .filter-btn.med.on   { border-color: var(--yellow);  color: var(--yellow); background: var(--yellow-soft); }
 .filter-btn.low.on   { border-color: var(--green);   color: var(--green);  background: var(--green-soft); }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 14px;
+}
+.pagination .page-info {
+  color: var(--faint);
+  font-size: 12px;
+  margin: 0 6px;
+}
+.pagination .btn {
+  min-width: 40px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.pagination .page-btn.active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+.pagination .page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  padding: 0 6px;
+}
 /* ── SECTION DIVIDER ──────────────────────────── */
 .sec-divider {
   font-size: 9.5px; font-weight: 600; color: var(--faint);
@@ -961,17 +1054,14 @@ body {
 .graph-shell { display: flex; gap: 14px; flex-wrap: wrap; }
 .graph-canvas-wrap {
   position: relative; flex: 1 1 580px; min-width: 300px; min-height: 500px;
-  background: #050710; border: 1px solid var(--border);
+  background: var(--graph-bg); border: 1px solid var(--border);
   border-radius: var(--r); overflow: hidden;
 }
 #net-svg { display: block; width: 100%; height: 500px; }
 #net-loader {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(12,13,16,.88);
+  display: flex; background: var(--graph-overlay);
   color: var(--text2);
   font-size: 13px;
   z-index: 15;
@@ -986,17 +1076,22 @@ body {
 .graph-btn {
   font-family: 'IBM Plex Mono', monospace; font-size: 11px;
   width: 32px; height: 32px; border: 1px solid var(--border);
-  border-radius: 10px; background: rgba(11,14,28,.92); color: var(--muted);
+  border-radius: 10px; background: var(--surface);
+  color: var(--muted);
   cursor: pointer; transition: all .15s ease;
 }
-.graph-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(20,35,70,.9); }
+.graph-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--surface2); }
 .graph-sidebar { display: flex; flex-direction: column; gap: 10px; width: 300px; min-width: 240px; }
-.graph-legend, .graph-filters, .node-info {
+.graph-legend, .graph-filters {
   padding: 14px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface);
 }
+.node-info {
+  padding: 14px; border: 1px solid var(--info-border); border-radius: var(--r-sm); background: var(--info-bg); color: var(--info-text);
+}
+.node-info * { color: inherit; }
 .legend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; color: var(--text2); font-size: 12.5px; }
 .legend-row:last-child { margin-bottom: 0; }
-.legend-circle { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,.1); }
+.legend-circle { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1px solid var(--border2); }
 .legend-bar    { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
 .checkbox-row  { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 12.5px; margin-bottom: 9px; color: var(--text2); }
 .checkbox-row input { accent-color: var(--blue); }
@@ -1190,6 +1285,9 @@ body {
         </button>
         <span class="notify-badge" id="notify-count" style="display:none">0</span>
       </div>
+      <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()" title="Toggle light / dark theme">
+        🌙 Dark
+      </button>
       <button class="btn-action" onclick="exportAll()" title="Export CSV">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
@@ -1259,7 +1357,7 @@ body {
       <div class="kpi-card red">
         <div class="kpi-label">High Risk</div>
         <div class="kpi-val red" id="ov-high">0</div>
-        <div class="kpi-trend">Critical + High combined</div>
+        <div class="kpi-trend">High risk combined</div>
       </div>
       <div class="kpi-card orange">
         <div class="kpi-label">Active Keywords</div>
@@ -1370,22 +1468,21 @@ body {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input class="search-input" id="si" placeholder="Search channels, usernames, categories…" oninput="renderChannels()">
         </div>
-        <button class="filter-btn on" onclick="setFilter('all',this)">All Risk</button>
-        <button class="filter-btn crit" onclick="setFilter('critical',this)">Critical</button>
-        <button class="filter-btn high" onclick="setFilter('high',this)">High</button>
-        <button class="filter-btn med" onclick="setFilter('medium',this)">Medium</button>
-        <button class="filter-btn low" onclick="setFilter('low',this)">Low</button>
+        <button class="filter-btn on" data-filter-group="risk" onclick="setFilter('all',this)">All Risk</button>
+        <button class="filter-btn high" data-filter-group="risk" onclick="setFilter('high',this)">High</button>
+        <button class="filter-btn med" data-filter-group="risk" onclick="setFilter('medium',this)">Medium</button>
+        <button class="filter-btn low" data-filter-group="risk" onclick="setFilter('low',this)">Low</button>
       </div>
       <!-- Thematic Category Filter Row -->
       <div class="search-row" style="border-bottom: 1px solid var(--border); padding-top: 0; gap: 6px; flex-wrap: wrap">
         <span style="font-size: 11px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; align-self: center">Category:</span>
-        <button class="filter-btn on" data-cat-filter="all" onclick="setCategoryFilter('all',this)">All Categories</button>
-        <button class="filter-btn" data-cat-filter="18+ / Adult Content" onclick="setCategoryFilter('18+ / Adult Content',this)">🔞 18+ Adult</button>
-        <button class="filter-btn" data-cat-filter="Crypto / Web3" onclick="setCategoryFilter('Crypto / Web3',this)">🪙 Crypto & Web3</button>
-        <button class="filter-btn" data-cat-filter="Scams & Fraud" onclick="setCategoryFilter('Scams & Fraud',this)">⚠️ Scams & Fraud</button>
-        <button class="filter-btn" data-cat-filter="News / OSINT / VPNs" onclick="setCategoryFilter('News / OSINT / VPNs',this)">📰 News & OSINT</button>
-        <button class="filter-btn" data-cat-filter="Academic / Universities" onclick="setCategoryFilter('Academic / Universities',this)">🎓 Academic</button>
-        <button class="filter-btn" data-cat-filter="General / Other" onclick="setCategoryFilter('General / Other',this)">📁 Other</button>
+        <button class="filter-btn on" data-filter-group="category" onclick="setCategoryFilter('all',this)">All Categories</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="18+ / Adult Content" onclick="setCategoryFilter('18+ / Adult Content',this)">🔞 18+ Adult</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="Crypto / Web3" onclick="setCategoryFilter('Crypto / Web3',this)">🪙 Crypto & Web3</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="Scams & Fraud" onclick="setCategoryFilter('Scams & Fraud',this)">⚠️ Scams & Fraud</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="News / OSINT / VPNs" onclick="setCategoryFilter('News / OSINT / VPNs',this)">📰 News & OSINT</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="Academic / Universities" onclick="setCategoryFilter('Academic / Universities',this)">🎓 Academic</button>
+        <button class="filter-btn" data-filter-group="category" data-cat-filter="General / Other" onclick="setCategoryFilter('General / Other',this)">📁 Other</button>
       </div>
       <!-- Export row -->
       <div style="display:flex;gap:7px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
@@ -1410,6 +1507,7 @@ body {
           <tbody id="ch-tbody"></tbody>
         </table>
       </div>
+      <div class="pagination" id="channel-pagination"></div>
     </div>
 
     <!-- Top by subs + channel relationships -->
@@ -1447,8 +1545,8 @@ body {
           <div class="msg-stat-val" id="act-total">—</div>
         </div>
         <div class="msg-stat">
-          <div class="msg-stat-label">Critical</div>
-          <div class="msg-stat-val" id="act-crit" style="color:var(--red)">—</div>
+          <div class="msg-stat-label">High Risk</div>
+          <div class="msg-stat-val" id="act-crit" style="color:var(--orange)">—</div>
         </div>
         <div class="msg-stat">
           <div class="msg-stat-label">Cross-Channel</div>
@@ -1467,11 +1565,10 @@ body {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" class="search-input" id="actor-search" placeholder="Search by actor ID, risk level, dataset…" oninput="renderActors()">
         </div>
-        <button class="filter-btn on"  onclick="setActorFilter('all',this)">All</button>
-        <button class="filter-btn crit" onclick="setActorFilter('critical',this)">Critical</button>
-        <button class="filter-btn high" onclick="setActorFilter('high',this)">High</button>
-        <button class="filter-btn med"  onclick="setActorFilter('medium',this)">Medium</button>
-        <button class="filter-btn low"  onclick="setActorFilter('low',this)">Low</button>
+        <button class="filter-btn on" data-filter-group="actor-risk" onclick="setActorFilter('all',this)">All</button>
+        <button class="filter-btn high" data-filter-group="actor-risk" onclick="setActorFilter('high',this)">High</button>
+        <button class="filter-btn med" data-filter-group="actor-risk" onclick="setActorFilter('medium',this)">Medium</button>
+        <button class="filter-btn low" data-filter-group="actor-risk" onclick="setActorFilter('low',this)">Low</button>
       </div>
       <div class="table-wrap">
         <table class="dt">
@@ -1491,6 +1588,7 @@ body {
           <tbody id="actors-tbody"></tbody>
         </table>
       </div>
+      <div class="pagination" id="actor-pagination"></div>
     </div>
   </div>
 
@@ -1531,7 +1629,13 @@ body {
             <span class="card-tag" id="msg-ch-count">—</span>
           </div>
           <div style="padding:8px 12px; border-bottom:1px solid var(--border)">
-            <input class="search-input" id="msg-ch-search" placeholder="Filter channels…" style="width:100%; font-size:12px; height:32px" oninput="msgFilterChannels()">
+            <input class="search-input" id="msg-ch-search" placeholder="Filter channels…" style="width:100%; font-size:12px; height:32px" oninput="msgPage=1;msgFilterChannels()">
+          </div>
+          <div style="padding:8px 12px; display:flex; flex-wrap:wrap; gap:6px; border-bottom:1px solid var(--border)">
+            <button class="filter-btn on" data-filter-group="msg-risk" onclick="setMsgRiskFilter('all', this)">All</button>
+            <button class="filter-btn high" data-filter-group="msg-risk" onclick="setMsgRiskFilter('high', this)">High</button>
+            <button class="filter-btn med" data-filter-group="msg-risk" onclick="setMsgRiskFilter('medium', this)">Medium</button>
+            <button class="filter-btn low" data-filter-group="msg-risk" onclick="setMsgRiskFilter('low', this)">Low</button>
           </div>
           <div class="channel-pick-list" id="ch-pick-list">
             <!-- Skeletons will show here initially -->
@@ -1547,6 +1651,7 @@ body {
         <div class="msg-list-wrap" id="msg-list-wrap">
           <div class="empty-state">No channel selected.</div>
         </div>
+        <div class="pagination" id="msg-pagination" style="margin:8px 14px 14px"></div>
       </div>
     </div>
 
@@ -1657,7 +1762,6 @@ body {
         <div class="graph-sidebar">
           <div class="graph-legend">
             <div class="card-title" style="margin-bottom:10px">Legend</div>
-            <div class="legend-row"><span class="legend-circle" style="background:var(--red)"></span><span>Critical</span></div>
             <div class="legend-row"><span class="legend-circle" style="background:var(--orange)"></span><span>High</span></div>
             <div class="legend-row"><span class="legend-circle" style="background:var(--yellow)"></span><span>Medium</span></div>
             <div class="legend-row"><span class="legend-circle" style="background:var(--green)"></span><span>Low</span></div>
@@ -1670,7 +1774,6 @@ body {
           </div>
           <div class="graph-filters">
             <div class="card-title" style="margin-bottom:10px">Filters</div>
-            <label class="checkbox-row"><input type="checkbox" class="risk-toggle" data-risk="critical" checked>Critical</label>
             <label class="checkbox-row"><input type="checkbox" class="risk-toggle" data-risk="high" checked>High</label>
             <label class="checkbox-row"><input type="checkbox" class="risk-toggle" data-risk="medium" checked>Medium</label>
             <label class="checkbox-row"><input type="checkbox" class="risk-toggle" data-risk="low" checked>Low</label>
@@ -1758,7 +1861,7 @@ body {
       </div>
 
       <!-- Canvas scatter -->
-      <div class="cexp-canvas-wrap" style="background:#050710;margin:0 16px;border-radius:var(--r-sm);border:1px solid var(--border);position:relative">
+      <div class="cexp-canvas-wrap" style="background:var(--graph-bg);margin:0 16px;border-radius:var(--r-sm);border:1px solid var(--border);position:relative">
         <canvas id="cexpCanvas"></canvas>
         <div id="cexpTooltip">
           <div class="cexp-tt-title"></div>
@@ -1788,36 +1891,109 @@ body {
 
 <script>
 const API = 'http://localhost:3000';
-const RCOL  = { critical:'#ff4d5a', high:'#ff9340', medium:'#ffd452', low:'#3de888', unclassified:'#7a8099', bridge:'#7a8099' };
-const RBGA  = { critical:'rgba(255,77,90,.1)', high:'rgba(255,147,64,.1)', medium:'rgba(255,212,82,.1)', low:'rgba(61,232,136,.1)', unclassified:'rgba(122,128,153,.08)', bridge:'rgba(122,128,153,.08)' };
-const RORDER= { critical:0, high:1, medium:2, low:3, unclassified:4 };
+const THEME_STORAGE_KEY = 'lumen-theme-v1';
+const RCOL  = { high:'#ff9340', medium:'#ffd452', low:'#3de888', unclassified:'#7a8099', bridge:'#7a8099' };
+const RBGA  = { high:'rgba(255,147,64,.1)', medium:'rgba(255,212,82,.1)', low:'rgba(61,232,136,.1)', unclassified:'rgba(122,128,153,.08)', bridge:'rgba(122,128,153,.08)' };
+const RORDER= { high:0, medium:1, low:2, unclassified:3 };
 const NETWORK_CACHE_KEY = 'lumen-network-layout-v1';
+
+function applyThemeBtnLabel(theme){
+  const btn = document.getElementById('theme-toggle-btn');
+  if(!btn) return;
+  btn.textContent = theme === 'light' ? '☀️ Light' : '🌙 Dark';
+}
+function setTheme(theme){
+  const body = document.body;
+  body.classList.toggle('light-theme', theme === 'light');
+  body.classList.toggle('dark-theme', theme === 'dark');
+  if(typeof localStorage !== 'undefined') localStorage.setItem(THEME_STORAGE_KEY, theme);
+  applyThemeBtnLabel(theme);
+}
+function toggleTheme(){
+  const isLight = document.body.classList.contains('light-theme');
+  setTheme(isLight ? 'dark' : 'light');
+}
+function initTheme(){
+  let theme = 'dark';
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if(saved === 'light' || saved === 'dark') theme = saved;
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) theme = 'light';
+  } catch (e) {
+    theme = 'dark';
+  }
+  setTheme(theme);
+}
 
 let channelData=[], actorData=[], keywordData=[], netAPIData=null, messageData=[];
 let messageDataTotal = 0, actorDataTotal = 0;
+const PAGE_SIZE = 20;
 let curFilter='all', curCategoryFilter='all', actorFilter='all', sortCol='_idx', sortDir=1;
-let msgFilter='all';
+let channelPage=1, actorPage=1, msgPage=1, msgChannelRiskFilter='all';
 let focusedChannel=null;
 
-function setCategoryFilter(cat, el) {
-  curCategoryFilter = cat;
-  document.querySelectorAll('[data-cat-filter]').forEach(b => b.classList.remove('on'));
+const CATEGORY_CANONICAL = {
+  '18+ / adult content': ['18+ / adult content', 'adult content', '18+', '18 plus'],
+  'crypto / web3': ['crypto / web3', 'crypto', 'web3', 'crypto & web3', 'crypto/web3'],
+  'scams & fraud': ['scams & fraud', 'scams', 'fraud', 'scam', 'fraudulent'],
+  'news / osint / vpns': ['news / osint / vpns', 'news', 'osint', 'vpn', 'vpns'],
+  'academic / universities': ['academic / universities', 'academic', 'universities', 'university'],
+  'general / other': ['general / other', 'general', 'other', 'misc', 'miscellaneous']
+};
+
+function normalizeCategory(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function categoryMatches(category, filter) {
+  if (filter === 'all') return true;
+  const normalizedCategory = normalizeCategory(category);
+  const normalizedFilter = normalizeCategory(filter);
+  if (!normalizedCategory) return false;
+  if (normalizedCategory === normalizedFilter) return true;
+  const canonical = CATEGORY_CANONICAL[normalizedFilter] || [];
+  if (canonical.some(alt => normalizedCategory === normalizeCategory(alt))) return true;
+  if (canonical.some(alt => normalizedCategory.includes(normalizeCategory(alt)))) return true;
+  return normalizedCategory.includes(normalizedFilter) || normalizedFilter.includes(normalizedCategory);
+}
+
+function setFilter(f, el) {
+  curFilter = f;
+  channelPage = 1;
+  document.querySelectorAll('[data-filter-group="risk"]').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   renderChannels();
 }
+
+function setCategoryFilter(cat, el) {
+  curCategoryFilter = cat;
+  channelPage = 1;
+  document.querySelectorAll('[data-filter-group="category"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderChannels();
+}
+
+function setMsgRiskFilter(f, el) {
+  msgChannelRiskFilter = f;
+  msgPage = 1;
+  document.querySelectorAll('[data-filter-group="msg-risk"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  msgFilterChannels();
+}
+
 let expandedActors=new Set(), expandedChannels=new Set();
 
 /* ── STATIC FALLBACKS ─────────────────────────── */
 const SCHAN=[
   {name:'channel1',subs:15000,risk:'high',category:'Tech',created:'2023-01-15',lastActive:'2023-05-10',status:'Active',dataset:'ds_a',is_indexed:true,is_dead_end:false,discovery_method:'keyword',relevance_score:0.87},
   {name:'channel2',subs:8500,risk:'medium',category:'News',created:'2023-02-20',lastActive:'2023-05-09',status:'Active',dataset:'ds_b',is_indexed:true,is_dead_end:false,discovery_method:'link',relevance_score:0.52},
-  {name:'channel3',subs:30000,risk:'critical',category:'Harm',created:'2023-03-01',lastActive:'2023-05-11',status:'Active',dataset:'ds_a',is_indexed:true,is_dead_end:false,discovery_method:'keyword',relevance_score:0.98},
+  {name:'channel3',subs:30000,risk:'high',category:'Harm',created:'2023-03-01',lastActive:'2023-05-11',status:'Active',dataset:'ds_a',is_indexed:true,is_dead_end:false,discovery_method:'keyword',relevance_score:0.98},
   {name:'channel4',subs:4500,risk:'low',category:'General',created:'2023-04-10',lastActive:'2023-05-08',status:'Banned',dataset:'ds_c',is_indexed:false,is_dead_end:true,discovery_method:'manual',relevance_score:0.21}
 ];
 const SACTORS=[
   {actor_id:'user123',message_count:150,cross_channel_posts:5,risk_level:'high',first_seen:'2023-01-15T10:00:00Z',last_seen:'2023-05-10T14:30:00Z',posting_frequency:4.2,typical_post_times:[9,12,18],channels_active_in:['channel1','channel2'],channels_administered:[],risk_signals:['high_freq','cross_channel'],dataset:'ds_a'},
   {actor_id:'actor456',message_count:89,cross_channel_posts:2,risk_level:'medium',first_seen:'2023-02-20T08:00:00Z',last_seen:'2023-05-09T16:45:00Z',posting_frequency:1.8,typical_post_times:[10,15,20],channels_active_in:['channel2'],channels_administered:['channel2'],risk_signals:['admin'],dataset:'ds_b'},
-  {actor_id:'bot789',message_count:300,cross_channel_posts:10,risk_level:'critical',first_seen:'2023-03-01T12:00:00Z',last_seen:'2023-05-11T11:00:00Z',posting_frequency:22.4,typical_post_times:[6,12,18,22],channels_active_in:['channel1','channel3'],channels_administered:['channel3'],risk_signals:['bot_like','high_volume','admin','cross_channel'],dataset:'ds_a'},
+  {actor_id:'bot789',message_count:300,cross_channel_posts:10,risk_level:'high',first_seen:'2023-03-01T12:00:00Z',last_seen:'2023-05-11T11:00:00Z',posting_frequency:22.4,typical_post_times:[6,12,18,22],channels_active_in:['channel1','channel3'],channels_administered:['channel3'],risk_signals:['bot_like','high_volume','admin','cross_channel'],dataset:'ds_a'},
   {actor_id:'normal_user',message_count:45,cross_channel_posts:1,risk_level:'low',first_seen:'2023-04-10T09:00:00Z',last_seen:'2023-05-08T13:20:00Z',posting_frequency:0.6,typical_post_times:[8,17],channels_active_in:['channel4'],channels_administered:[],risk_signals:[],dataset:'ds_c'}
 ];
 const SKWS=[
@@ -1834,7 +2010,7 @@ const SMSGS=[
   {text:'Forwarded post from unknown channel with deepfake link',channel:'channel2',risk:'medium',flagged:false,forwarded:true,media:true,
    content_flags:['ai_generated'],keyword_matches:['deepfake'],extracted_links:['https://t.me/deepfake_bot'],extracted_mentions:[],extracted_hashtags:['#ai','#deepfake'],
    is_forwarded:true,has_media:true,is_embedded:false,is_processed:true,media_type:'photo',timestamp:'2023-05-09T16:45:00Z',dataset:'ds_b'},
-  {text:'Critical distribution hub activity detected',channel:'channel3',risk:'critical',flagged:true,forwarded:false,media:false,
+  {text:'Critical distribution hub activity detected',channel:'channel3',risk:'high',flagged:true,forwarded:false,media:false,
    content_flags:['harm','coordinated'],keyword_matches:['undress','reveal'],extracted_links:['https://t.me/joinchat/abc'],extracted_mentions:['@admin'],extracted_hashtags:[],
    is_forwarded:false,has_media:false,is_embedded:true,is_processed:true,media_type:null,timestamp:'2023-05-11T11:00:00Z',dataset:'ds_a'}
 ];
@@ -1942,6 +2118,7 @@ async function fetchAll() {
 }
 
 function fmtN(n){
+  if(n == null || n === '') return '';
   if(!n) return '0';
   if(n>=1e6) return (n/1e6).toFixed(1)+'M';
   if(n>=1e3) return Math.round(n/1e3)+'k';
@@ -1966,7 +2143,7 @@ function applyStats(s){
   if(!s) return;
   const fields={
     'ov-total':s.totalChannels,'ov-msgs':s.totalMessages,'ov-edges':s.totalEdges,
-    'ov-fwd':s.forwardedMessages,'ov-active':s.activeChannels,'ov-high':s.highRisk,
+    'ov-fwd':s.forwardedMessages,'ov-active':s.activeChannels,'ov-high':(s.criticalRisk||0)+(s.highRisk||0),
     'ov-kw':s.totalKeywords,'ov-subs':s.totalSubscribers
   };
   for(const [id,val] of Object.entries(fields)){
@@ -1976,8 +2153,7 @@ function applyStats(s){
   const rd=document.getElementById('risk-dist-list');
   if(rd){
     const risks=[
-      {label:'Critical',count:s.criticalRisk||0,col:'var(--red)'},
-      {label:'High',    count:s.highRisk||0,    col:'var(--orange)'},
+      {label:'High',    count:(s.highRisk||0)+(s.criticalRisk||0), col:'var(--orange)'},
       {label:'Medium',  count:s.mediumRisk||0,  col:'var(--yellow)'},
       {label:'Low',     count:s.lowRisk||0,     col:'var(--green)'},
       {label:'Unclassified',count:s.unclassifiedRisk||0,col:'var(--faint)'}
@@ -2033,32 +2209,32 @@ function renderTimeline(data){
 /* ── TRIAGE ───────────────────────────────────── */
 function renderTriageAlerts(){
   const raw=channelData.length?channelData:SCHAN;
-  const critical=raw.filter(c=>(c.risk||'').toLowerCase()==='critical');
+  const critical=raw.filter(c=>['critical','high'].includes((c.risk||'').toLowerCase()));
   const el=document.getElementById('triage-list');
   if(!el) return;
   if(!critical.length){
     el.innerHTML='<div style="padding:24px;text-align:center;color:var(--faint);font-size:13px">No critical alerts detected</div>';return;
   }
   el.innerHTML=critical.slice(0,4).map(c=>`
-    <div class="triage-item t-critical" onclick="focusChannel('${c.name}','critical','${fmtN(c.subs)} subs · ${c.lastActive}')">
+    <div class="triage-item t-high" onclick="focusChannel('${c.name}','high','${c.subs != null ? fmtN(c.subs) : '—'} subs · ${c.lastActive}')">
       <div class="triage-dot"></div>
       <div class="triage-body">
-        <div class="triage-title">${c.name} — Critical risk activity</div>
-        <div class="triage-sub">Subscribers: ${fmtN(c.subs)} · Last active: ${c.lastActive} · Dataset: ${c.dataset||'—'} · Score: ${c.relevance_score?.toFixed(2)||'—'}</div>
+        <div class="triage-title">${c.name} — High risk activity</div>
+        <div class="triage-sub">Subscribers: ${c.subs != null ? fmtN(c.subs) : '—'} · Last active: ${c.lastActive} · Dataset: ${c.dataset||'—'} · Score: ${c.relevance_score?.toFixed(2)||'—'}</div>
       </div>
       <div class="triage-action">Investigate →</div>
     </div>`).join('');
-  document.getElementById('triage-ts').textContent=`${critical.length} critical · updated just now`;
+  document.getElementById('triage-ts').textContent=`${critical.length} high risk · updated just now`;
 }
 
 function updateAlerts(){
   const alert=document.getElementById('live-alert');
   const content=document.getElementById('alert-content');
   if(!alert||!content) return;
-  const criticalCount=channelData.filter(c=>(c.risk||'').toLowerCase()==='critical').length;
+  const criticalCount=channelData.filter(c=>['critical','high'].includes((c.risk||'').toLowerCase())).length;
   if(criticalCount>5){
     alert.classList.add('visible');
-    content.innerHTML=`<strong>Elevated Risk Detected</strong><p>${criticalCount} channels flagged Critical — coordinated activity monitoring active.</p>`;
+    content.innerHTML=`<strong>Elevated Risk Detected</strong><p>${criticalCount} channels flagged High risk — coordinated activity monitoring active.</p>`;
   }else{
     alert.classList.remove('visible');
   }
@@ -2066,37 +2242,52 @@ function updateAlerts(){
 
 /* ── CHANNELS ─────────────────────────────────── */
 function renderChannels(){
-  const raw=channelData.length?channelData:SCHAN;
-  const q=(document.getElementById('si')?.value||'').toLowerCase();
-  let rows=raw.map((c,i)=>({...c,_idx:i}));
-  if(curFilter!=='all') rows=rows.filter(c=>(c.risk||'').toLowerCase()===curFilter);
-  if(curCategoryFilter!=='all') rows=rows.filter(c=>c.category===curCategoryFilter);
-  if(q) rows=rows.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.category||'').toLowerCase().includes(q)||(c.dataset||'').toLowerCase().includes(q));
-  rows.sort((a,b)=>{
-    if(sortCol==='subs') return sortDir*(+a.subs-+b.subs);
-    if(sortCol==='risk') return sortDir*((RORDER[a.risk?.toLowerCase()]??4)-(RORDER[b.risk?.toLowerCase()]??4));
-    if(sortCol==='_idx') return sortDir*(a._idx-b._idx);
-    return sortDir*String(a[sortCol]||'').localeCompare(String(b[sortCol]||''));
+  const raw = channelData.length ? channelData : SCHAN;
+  const q = (document.getElementById('si')?.value || '').toLowerCase();
+  const normalize = value => String(value || '').trim().toLowerCase();
+  let rows = raw.map((c,i) => ({...c, _idx:i}));
+  if (curFilter !== 'all') rows = rows.filter(c => normalize(c.risk) === curFilter);
+  if (curCategoryFilter !== 'all') rows = rows.filter(c => categoryMatches(c.category, curCategoryFilter));
+  if (q) rows = rows.filter(c => normalize(c.name).includes(q) || normalize(c.category).includes(q) || normalize(c.dataset).includes(q) || normalize(c.discovery_method).includes(q));
+
+  rows.sort((a,b) => {
+    if (sortCol === 'subs') return sortDir * ((+a.subs || 0) - (+b.subs || 0));
+    if (sortCol === 'risk') return sortDir * ((RORDER[normalize(a.risk)] ?? 4) - (RORDER[normalize(b.risk)] ?? 4));
+    if (sortCol === '_idx') return sortDir * (a._idx - b._idx);
+    return sortDir * String(a[sortCol] || '').localeCompare(String(b[sortCol] || ''));
   });
-  const el=document.getElementById('ch-count');if(el) el.textContent=rows.length+' channels';
-  const tb=document.getElementById('ch-tbody');if(!tb) return;
-  const rmap={critical:'b-crit',high:'b-high',medium:'b-med',low:'b-low',unclassified:'b-un'};
-  tb.innerHTML=rows.map((c,i)=>{
-    const expId=`ch-exp-${c._idx}`;
-    return`<tr style="cursor:pointer" onclick="toggleChannelExpand('${expId}',this)" title="Click to expand ${c.name}">
-      <td class="mono" style="color:var(--faint)">${i+1}</td>
+
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  channelPage = Math.min(Math.max(channelPage, 1), totalPages);
+  const pageRows = rows.slice((channelPage - 1) * PAGE_SIZE, channelPage * PAGE_SIZE);
+
+  const el = document.getElementById('ch-count');
+  if (el) el.textContent = `${total} channels`;
+  const tb = document.getElementById('ch-tbody');
+  if (!tb) return;
+  const rmap = {high:'b-high', medium:'b-med', low:'b-low', unclassified:'b-un'};
+
+  if (!pageRows.length) {
+    tb.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--faint)">No results match the active filters.</td></tr>`;
+  } else {
+    tb.innerHTML = pageRows.map((c,i) => {
+      const expId = `ch-exp-${c._idx}`;
+      return `
+    <tr style="cursor:pointer" onclick="toggleChannelExpand('${expId}',this)" title="Click to expand ${c.name}">
+      <td class="mono" style="color:var(--faint)">${(channelPage - 1) * PAGE_SIZE + i + 1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:6px">
-          <span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${fmtN(c.subs)} subs')">${c.name||'—'}</span>
+          <span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${normalizeRisk(c.risk)}','${c.subs != null ? fmtN(c.subs) : '—'} subs')">${c.name||'—'}</span>
           ${c.is_dead_end?`<span style="font-size:9px;color:var(--faint);font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:1px 5px;border-radius:3px">dead-end</span>`:''}
         </div>
         ${c.discovery_method?`<div style="font-size:10.5px;color:var(--faint);font-family:'IBM Plex Mono',monospace;margin-top:1px">via ${c.discovery_method}</div>`:''}
       </td>
       <td style="color:var(--muted);font-size:12px">${c.category||'—'}</td>
-      <td><div class="sub-row"><span class="mono">${fmtN(c.subs)}</span><div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,(+c.subs||0)/3600)}%"></div></div></div></td>
+      <td><div class="sub-row"><span class="mono">${c.subs != null ? fmtN(c.subs) : '—'}</span>${c.subs != null && c.subs > 0 ? `<div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,(+c.subs||0)/3600)}%"></div></div>` : ''}</div></td>
       <td class="mono" style="color:var(--faint)">${c.created||'—'}</td>
       <td class="mono" style="color:var(--faint)">${c.lastActive||'—'}</td>
-      <td><span class="badge ${rmap[(c.risk||'').toLowerCase()]||'b-un'}">${c.risk||'—'}</span></td>
+      <td><span class="badge ${rmap[normalizeRisk(c.risk)]||'b-un'}">${normalizeRisk(c.risk)||'—'}</span></td>
       <td>${c.status==='Active'?`<span class="status-active">● Active</span>`:c.status==='Banned'?`<span class="status-banned">✕ Banned</span>`:`<span class="status-inactive">○ ${c.status||'—'}</span>`}</td>
       <td>${dsBadge(c.dataset)}</td>
     </tr>
@@ -2107,10 +2298,18 @@ function renderChannels(){
         <div class="ch-exp-section"><div class="ch-exp-label">Discovery</div><div class="ch-exp-val" style="font-family:'IBM Plex Mono',monospace">${c.discovery_method||'—'}</div></div>
         <div class="ch-exp-section"><div class="ch-exp-label">Dead End</div><div class="ch-exp-val">${c.is_dead_end?'<span style="color:var(--orange)">✓ Yes</span>':'<span style="color:var(--faint)">No</span>'}</div></div>
         <div class="ch-exp-section"><div class="ch-exp-label">Dataset</div><div class="ch-exp-val">${dsBadge(c.dataset)}</div></div>
-        <div style="flex:1;text-align:right"><button class="btn" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${fmtN(c.subs)} subs · ${c.lastActive||'?'}')">Investigate →</button></div>
+        <div style="flex:1;text-align:right"><button class="btn" onclick="event.stopPropagation();focusChannel('${c.name}','${normalizeRisk(c.risk)}','${c.subs != null ? fmtN(c.subs) : '—'} subs · ${c.lastActive||'?'}')">Investigate →</button></div>
       </div>
     </td></tr>`;
-  }).join('');
+    }).join('');
+  }
+
+  renderPagination('channel-pagination', channelPage, totalPages, 'setChannelPage');
+}
+
+function setChannelPage(page){
+  channelPage = page;
+  renderChannels();
 }
 
 function toggleChannelExpand(expId,rowEl){
@@ -2120,15 +2319,38 @@ function toggleChannelExpand(expId,rowEl){
   el.classList.toggle('visible',!vis);
 }
 
-function setFilter(f,el){
-  curFilter=f;
-  document.querySelectorAll('#panel-channels .filter-btn').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  renderChannels();
-}
 function sortBy(col){
   if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
   renderChannels();
+}
+
+function renderPagination(containerId, currentPage, totalPages, callbackName) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const pages = [];
+  const range = 2;
+  const start = Math.max(1, currentPage - range);
+  const end = Math.min(totalPages, currentPage + range);
+
+  if (start > 1) pages.push(1);
+  if (start > 2) pages.push('...');
+  for (let p = start; p <= end; p += 1) pages.push(p);
+  if (end < totalPages - 1) pages.push('...');
+  if (end < totalPages) pages.push(totalPages);
+
+  container.innerHTML = `
+    <button class="btn page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="${callbackName}(${currentPage - 1})">Previous</button>
+    ${pages.map(p => typeof p === 'number'
+      ? `<button class="btn page-btn ${p === currentPage ? 'active' : ''}" onclick="${callbackName}(${p})">${p}</button>`
+      : `<span class="page-ellipsis">${p}</span>`
+    ).join('')}
+    <button class="btn page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="${callbackName}(${currentPage + 1})">Next</button>
+  `;
 }
 
 function renderTopChannels(){
@@ -2140,9 +2362,9 @@ function renderTopChannels(){
   const maxSubs=Math.max(...rows.map(r=>+r.subs||1));
   tb.innerHTML=rows.map(c=>`
     <tr>
-      <td><span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${fmtN(c.subs)} subs')">${c.name||'—'}</span></td>
-      <td><div class="sub-row"><span class="mono">${fmtN(c.subs)}</span><div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,((+c.subs||0)/maxSubs)*100)}%"></div></div></div></td>
-      <td><span class="badge ${rmap[(c.risk||'').toLowerCase()]||'b-un'}">${c.risk||'—'}</span></td>
+      <td><span class="ch-name" style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="event.stopPropagation();focusChannel('${c.name}','${(c.risk||'').toLowerCase()}','${c.subs != null ? fmtN(c.subs) : '—'} subs')">${c.name||'—'}</span></td>
+      <td><div class="sub-row"><span class="mono">${c.subs != null ? fmtN(c.subs) : '—'}</span>${c.subs != null && c.subs > 0 ? `<div class="sub-bar"><div class="sub-fill" style="width:${Math.min(100,((+c.subs||0)/maxSubs)*100)}%"></div></div>` : ''}</div></td>
+      <td><span class="badge ${rmap[normalizeRisk(c.risk)]||'b-un'}">${normalizeRisk(c.risk)||'—'}</span></td>
       <td>${c.status==='Active'?`<span class="status-active">● Active</span>`:`<span class="status-banned">✕ ${c.status||'—'}</span>`}</td>
     </tr>`).join('');
 }
@@ -2153,45 +2375,75 @@ function renderActorStats(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const total = actorDataTotal || raw.length;
   set('act-total',fmtN(total));
-  set('act-crit',raw.filter(a=>(a.risk_level||'').toLowerCase()==='critical').length);
+  set('act-crit',raw.filter(a=>['critical','high'].includes((a.risk_level||'').toLowerCase())).length);
   set('act-cross',raw.filter(a=>(+a.cross_channel_posts||0)>3).length);
   const freqs=raw.map(a=>+a.posting_frequency||0).filter(f=>f>0);
   set('act-freq',freqs.length?(freqs.reduce((a,b)=>a+b,0)/freqs.length).toFixed(1)+'/day':'—');
 }
 
 function renderActors(){
-  const raw=actorData.length?actorData:SACTORS;
-  const q=(document.getElementById('actor-search')?.value||'').toLowerCase();
-  let rows=raw.map((a,i)=>({...a,_idx:i}));
-  if(actorFilter!=='all') rows=rows.filter(a=>(a.risk_level||'').toLowerCase()===actorFilter);
-  if(q) rows=rows.filter(a=>(a.actor_id||'').toLowerCase().includes(q)||(a.dataset||'').toLowerCase().includes(q));
-  rows.sort((a,b)=>{
-    if(sortCol==='message_count') return sortDir*(+a.message_count-+b.message_count);
-    if(sortCol==='cross_channel_posts') return sortDir*(+a.cross_channel_posts-+b.cross_channel_posts);
-    if(sortCol==='posting_frequency') return sortDir*(+a.posting_frequency-+b.posting_frequency);
-    if(sortCol==='risk_level') return sortDir*((RORDER[a.risk_level?.toLowerCase()]??4)-(RORDER[b.risk_level?.toLowerCase()]??4));
-    if(sortCol==='first_seen') return sortDir*(new Date(a.first_seen||0)-new Date(b.first_seen||0));
-    if(sortCol==='last_seen') return sortDir*(new Date(a.last_seen||0)-new Date(b.last_seen||0));
-    return sortDir*String(a.actor_id||'').localeCompare(String(b.actor_id||''));
+  const raw = actorData.length ? actorData : SACTORS;
+  const q = (document.getElementById('actor-search')?.value || '').toLowerCase();
+  let rows = raw.map((a,i) => ({...a,_idx:i}));
+  if (actorFilter !== 'all') rows = rows.filter(a => (a.risk_level||'').toLowerCase() === actorFilter);
+  if (q) rows = rows.filter(a => (a.actor_id||'').toLowerCase().includes(q) || (a.dataset||'').toLowerCase().includes(q));
+  rows.sort((a,b) => {
+    if (sortCol === 'message_count') return sortDir * ((+a.message_count || 0) - (+b.message_count || 0));
+    if (sortCol === 'cross_channel_posts') return sortDir * ((+a.cross_channel_posts || 0) - (+b.cross_channel_posts || 0));
+    if (sortCol === 'posting_frequency') return sortDir * ((+a.posting_frequency || 0) - (+b.posting_frequency || 0));
+    if (sortCol === 'risk_level') return sortDir * ((RORDER[(a.risk_level||'').toLowerCase()] ?? 4) - (RORDER[(b.risk_level||'').toLowerCase()] ?? 4));
+    if (sortCol === 'first_seen') return sortDir * (new Date(a.first_seen || 0) - new Date(b.first_seen || 0));
+    if (sortCol === 'last_seen') return sortDir * (new Date(a.last_seen || 0) - new Date(b.last_seen || 0));
+    return sortDir * String(a.actor_id || '').localeCompare(String(b.actor_id || ''));
   });
-  const tb=document.getElementById('actors-tbody');if(!tb) return;
-  const rmap={critical:'b-crit',high:'b-high',medium:'b-med',low:'b-low',unclassified:'b-un'};
-  tb.innerHTML=rows.map(a=>{
-    const expId=`act-exp-${a._idx}`;
-    const signals=parseArr(a.risk_signals)||[];
-    const chActive=parseArr(a.channels_active_in)||[];
-    const chAdmin=parseArr(a.channels_administered)||[];
-    const postTimes=parseArr(a.typical_post_times)||[];
-    const freqBar=Array.from({length:24},(v,h)=>{
-      const inTimes=postTimes.includes(h)||postTimes.includes(String(h));
-      return`<div class="freq-bar-h" style="height:${inTimes?'20px':'4px'};opacity:${inTimes?1:.25}" title="${h}:00"></div>`;
-    }).join('');
-    return`<tr onclick="toggleActorExpand('${expId}',this)" style="cursor:pointer">
-      <td class="mono">${a.actor_id||'—'}</td>
+
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  actorPage = Math.min(Math.max(actorPage, 1), totalPages);
+  const pageRows = rows.slice((actorPage - 1) * PAGE_SIZE, actorPage * PAGE_SIZE);
+
+  const tb = document.getElementById('actors-tbody');
+  if (!tb) return;
+  const rmap = {high:'b-high', medium:'b-med', low:'b-low', unclassified:'b-un'};
+
+  if (!pageRows.length) {
+    tb.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--faint)">No results match the active filters.</td></tr>`;
+  } else {
+    tb.innerHTML = pageRows.map((a, i) => {
+      const expId = `act-exp-${a._idx}`;
+      const signals = parseArr(a.risk_signals) || [];
+      const chActive = parseArr(a.channels_active_in) || [];
+      const chAdmin = parseArr(a.channels_administered) || [];
+      const postTimes = parseArr(a.typical_post_times) || [];
+      // Only render bars when the actor has real posts AND real post-time data.
+      // An actor with 0 messages or no typical_post_times gets no graph at all.
+      // Also validate that postTimes contains valid hour values (0-23) to filter out placeholder data.
+      const validPostTimes = (postTimes || []).reduce((acc, t) => {
+        let hour = Number.isInteger(t) ? t : parseInt(String(t), 10);
+        const raw = String(t || '');
+        if (!Number.isFinite(hour) && raw.includes('T')) {
+          const parsed = new Date(raw);
+          if (!Number.isNaN(parsed.getTime())) hour = parsed.getHours();
+        }
+        if (Number.isFinite(hour) && hour >= 0 && hour <= 23) acc.push(hour);
+        return acc;
+      }, []);
+      const messageCount = Number(a.message_count);
+      const hasActivity = Number.isFinite(messageCount) && messageCount > 0 && validPostTimes.length > 0;
+      const freqBar = hasActivity
+        ? Array.from({length:24}, (v,h) => {
+            const inTimes = validPostTimes.includes(h) || validPostTimes.includes(String(h));
+            // Only render bars for hours that actually have activity; skip silent hours entirely
+            if (!inTimes) return '';
+            return `<div class="freq-bar-h" style="height:20px;opacity:1" title="${h}:00"></div>`;
+          }).join('')
+        : '<span style="color:var(--faint);font-size:11px;font-family:\'IBM Plex Mono\',monospace">no activity data</span>';
+      return `<tr onclick="toggleActorExpand('${expId}',this)" style="cursor:pointer">
+      <td class="mono">${(actorPage - 1) * PAGE_SIZE + i + 1}</td>
       <td class="mono">${fmtN(a.message_count||0)}</td>
       <td class="mono" style="${(+a.cross_channel_posts||0)>3?'color:var(--orange)':''}">${fmtN(a.cross_channel_posts||0)}</td>
       <td class="mono" style="${(+a.posting_frequency||0)>15?'color:var(--red)':(+a.posting_frequency||0)>5?'color:var(--orange)':''}">${(+a.posting_frequency||0).toFixed(1)}/d</td>
-      <td><span class="badge ${rmap[(a.risk_level||'').toLowerCase()]||'b-un'}">${a.risk_level||'—'}</span></td>
+      <td><span class="badge ${rmap[normalizeRisk(a.risk_level)]||'b-un'}">${normalizeRisk(a.risk_level)||'—'}</span></td>
       <td class="mono" style="color:var(--faint)">${a.first_seen?new Date(a.first_seen).toLocaleDateString():'—'}</td>
       <td class="mono" style="color:var(--faint)">${a.last_seen?new Date(a.last_seen).toLocaleDateString():'—'}</td>
       <td>${dsBadge(a.dataset)}</td>
@@ -2217,7 +2469,15 @@ function renderActors(){
         </div>
       </div>
     </td></tr>`;
-  }).join('');
+    }).join('');
+  }
+
+  renderPagination('actor-pagination', actorPage, totalPages, 'setActorPage');
+}
+
+function setActorPage(page){
+  actorPage = page;
+  renderActors();
 }
 
 function toggleActorExpand(expId,rowEl){
@@ -2228,7 +2488,8 @@ function toggleActorExpand(expId,rowEl){
 
 function setActorFilter(f,el){
   actorFilter=f;
-  document.querySelectorAll('#panel-actors .filter-btn').forEach(c=>c.classList.remove('on'));
+  actorPage = 1;
+  document.querySelectorAll('[data-filter-group="actor-risk"]').forEach(c=>c.classList.remove('on'));
   el.classList.add('on');
   renderActors();
 }
@@ -2245,7 +2506,7 @@ function focusChannel(name,risk,meta){
   const chName=document.getElementById('inv-channel-name');if(chName) chName.textContent=name;
   const chRisk=document.getElementById('inv-channel-risk');if(chRisk){chRisk.textContent=risk;chRisk.className='inv-badge '+(risk||'');}
   const chMeta=document.getElementById('inv-channel-meta');if(chMeta) chMeta.textContent=meta;
-  const msgNav=document.querySelector('.nav-item:nth-child(4)');
+  const msgNav=document.querySelectorAll('.nav-item')[3];
   if(msgNav) switchTab('messages',msgNav);
   
   // Find match in channelData
@@ -2319,27 +2580,21 @@ function initMessageExplorer() {
   const raw = channelData.length ? channelData : SCHAN;
   
   const chCountEl = document.getElementById('msg-ch-count');
-  if (chCountEl) chCountEl.textContent = raw.length;
-
   const pickList = document.getElementById('ch-pick-list');
   if (!pickList) return;
 
   if (!raw.length) {
+    if (chCountEl) chCountEl.textContent = '0';
     pickList.innerHTML = `<div class="empty-state" style="padding:16px">No channels found</div>`;
     return;
   }
 
-  // Filter default visible channels to threat-relevant only to keep list clean
-  const defaultVisible = raw.filter(c => ['critical', 'high', 'medium'].includes((c.risk || '').toLowerCase()));
-  renderExplorerChannelPicker(defaultVisible);
+  msgPage = 1;
+  msgFilterChannels();
 
-  if (!msgSelectedChannelId && raw.length) {
-    const sorted = [...raw].sort((a,b) => {
-      const aRisk = (a.risk || '').toLowerCase();
-      const bRisk = (b.risk || '').toLowerCase();
-      return (RORDER[aRisk] ?? 4) - (RORDER[bRisk] ?? 4);
-    });
-    const autoChannel = sorted[0];
+  if (!msgSelectedChannelId) {
+    const filtered = getFilteredMessageChannels(raw);
+    const autoChannel = filtered.length ? filtered[0] : raw[0];
     if (autoChannel) {
       msgSelectChannel(autoChannel.channel_id || autoChannel.name);
     }
@@ -2350,7 +2605,7 @@ function renderExplorerChannelPicker(channels) {
   const pickList = document.getElementById('ch-pick-list');
   if (!pickList) return;
 
-  const rmap = { critical: 'b-crit', high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
+  const rmap = { high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
 
   // Make sure the currently selected/focused channel is ALWAYS shown in the list
   let displayChannels = [...channels];
@@ -2361,14 +2616,19 @@ function renderExplorerChannelPicker(channels) {
     }
   }
 
+  if (!displayChannels.length) {
+    pickList.innerHTML = `<div class="empty-state" style="padding:16px;text-align:center;color:var(--faint)">No channels match the active filters.</div>`;
+    return;
+  }
+
   pickList.innerHTML = displayChannels.map(ch => {
     const isAct = (ch.channel_id || ch.name) === msgSelectedChannelId;
     return `
       <div class="channel-pick-item ${isAct ? 'active' : ''}" data-id="${ch.channel_id || ch.name}">
         <div class="channel-pick-name">${esc(ch.title || ch.name)}</div>
         <div class="channel-pick-meta">
-          <span class="badge ${rmap[(ch.risk || '').toLowerCase()] || 'b-un'}">${ch.risk || 'medium'}</span>
-          <span>${ch.subs ? fmtN(ch.subs) + ' subs' : '—'}</span>
+          <span class="badge ${rmap[normalizeRisk(ch.risk)] || 'b-un'}">${normalizeRisk(ch.risk) || 'medium'}</span>
+          <span>${ch.subs != null ? fmtN(ch.subs) + ' subs' : '—'}</span>
         </div>
       </div>
     `;
@@ -2381,13 +2641,35 @@ function renderExplorerChannelPicker(channels) {
   });
 }
 
-function msgFilterChannels() {
+function getFilteredMessageChannels(raw) {
   const q = (document.getElementById('msg-ch-search')?.value || '').toLowerCase();
-  const raw = channelData.length ? channelData : SCHAN;
-  const filtered = q
-    ? raw.filter(c => (c.title || '').toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q) || (c.username || '').toLowerCase().includes(q))
+  let filtered = q
+    ? raw.filter(c => (c.title || '').toLowerCase().includes(q)
+      || (c.name || '').toLowerCase().includes(q)
+      || (c.username || '').toLowerCase().includes(q))
     : raw.filter(c => ['critical', 'high', 'medium'].includes((c.risk || '').toLowerCase()));
-  renderExplorerChannelPicker(filtered);
+
+  if (msgChannelRiskFilter !== 'all') {
+    filtered = filtered.filter(c => ((c.risk || '').toLowerCase() === msgChannelRiskFilter));
+  }
+
+  return filtered;
+}
+
+function msgFilterChannels() {
+  const raw = channelData.length ? channelData : SCHAN;
+  const filtered = getFilteredMessageChannels(raw);
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  msgPage = Math.min(Math.max(msgPage, 1), totalPages);
+
+  const pageChannels = filtered.slice((msgPage - 1) * PAGE_SIZE, msgPage * PAGE_SIZE);
+  const chCountEl = document.getElementById('msg-ch-count');
+  if (chCountEl) chCountEl.textContent = total;
+
+  renderExplorerChannelPicker(pageChannels);
+  renderPagination('msg-pagination', msgPage, totalPages, 'setMsgPage');
 }
 
 async function msgSelectChannel(id) {
@@ -2418,7 +2700,7 @@ async function msgSelectChannel(id) {
   const ch = channelData.find(c => (c.channel_id === id || c.name === id)) || 
              { title: id, name: id, risk: 'medium', subs: 0, content_flags: [], relevance_score: 0 };
 
-  const rmap = { critical: 'b-crit', high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
+  const rmap = { high: 'b-high', medium: 'b-med', low: 'b-low', unclassified: 'b-un' };
   const flags = Array.isArray(ch.content_flags) ? ch.content_flags : (ch.content_flags ? JSON.parse(ch.content_flags) : []);
 
   header.innerHTML = `
@@ -2428,9 +2710,9 @@ async function msgSelectChannel(id) {
     </div>
     <div class="msg-header-meta" style="margin-top:6px">
       ${ch.username ? `<span style="font-family:monospace;color:var(--blue)">@${esc(ch.username)}</span>` : ''}
-      <span class="badge ${rmap[(ch.risk || '').toLowerCase()] || 'b-un'}">${ch.risk || 'medium'}</span>
+      <span class="badge ${rmap[normalizeRisk(ch.risk)] || 'b-un'}">${normalizeRisk(ch.risk) || 'medium'}</span>
       ${ch.relevance_score ? `<span class="flag-chip" style="border-radius:4px;background:rgba(91,159,255,.08);color:var(--blue);border:1px solid rgba(91,159,255,.2)">Score: ${ch.relevance_score.toFixed(3)}</span>` : ''}
-      <span>${ch.subs ? fmtN(ch.subs) + ' subscribers' : '0 subscribers'}</span>
+      <span>${ch.subs != null ? fmtN(ch.subs) + ' subscribers' : ''}</span>
       ${flags.map(f => `<span class="flag-chip" style="background:rgba(255,147,64,.08);color:var(--orange);border:1px solid rgba(255,147,64,.2)">${esc(f.replace(/_/g, ' '))}</span>`).join('')}
     </div>
   `;
@@ -2606,7 +2888,7 @@ function renderClusters(){
     el.innerHTML='<div style="padding:24px;text-align:center;color:var(--faint);font-size:13px">Cluster data unavailable</div>';return;
   }
   const clusters=[
-    {name:'Critical Infrastructure',risk:'critical'},
+
     {name:'High Reach Networks',risk:'high'},
     {name:'Coordinated Groups',risk:'medium'}
   ];
@@ -2771,12 +3053,17 @@ async function netInit(){
   }
   if(badge) badge.textContent='loading…';
 
+  const cache = loadNetworkCache();
+  if(cache?.payload){
+    netAPIData = cache.payload;
+  }
+
   if(!netAPIData){
     if(!NET.loading){
       NET.loading=true;
       netFetchPromise = fetch(`${API}/api/network`)
         .then(response=>{ if(!response.ok) throw new Error('fail'); return response.json(); })
-        .then(data=>{ netAPIData=data; NET.loading=false; return data; })
+        .then(data=>{ netAPIData=data; saveNetworkPayloadCache(data); NET.loading=false; return data; })
         .catch(err=>{ NET.loading=false; throw err; });
     }
     try{
@@ -2792,8 +3079,7 @@ async function netInit(){
     }
   }
 
-  if(badge) badge.textContent=`${(netAPIData.nodes||[]).length} channels · ${(netAPIData.edges||[]).length} links`;
-  const cache = loadNetworkLayoutCache();
+  if(badge) badge.textContent=`${(netAPIData.nodes||[]).length} channels · ${(netAPIData.edges||[]).length} links${cache?.payload ? ' (cached)' : ''}`;
   renderNetworkGraph(cache);
 }
 
@@ -2847,8 +3133,7 @@ function renderNetworkGraph(cache){
     if (colorMode === 'category') {
       return CEXP.COLORS[d.category] || '#9e9e9e';
     } else {
-      if(d.risk_level==='critical') return '#ff4d5a';
-      if(d.risk_level==='high') return '#ff9340';
+      if(normalizeRisk(d.risk_level)==='high') return '#ff9340';
       if(d.risk_level==='medium') return '#ffd452';
       if(d.risk_level==='low') return '#3de888';
       return '#4a5068';
@@ -2867,7 +3152,6 @@ function renderNetworkGraph(cache){
       }
     } else {
       html += `
-        <div class="legend-row"><span class="legend-circle" style="background:var(--red)"></span><span>Critical</span></div>
         <div class="legend-row"><span class="legend-circle" style="background:var(--orange)"></span><span>High</span></div>
         <div class="legend-row"><span class="legend-circle" style="background:var(--yellow)"></span><span>Medium</span></div>
         <div class="legend-row"><span class="legend-circle" style="background:var(--green)"></span><span>Low</span></div>
@@ -2899,7 +3183,6 @@ function renderNetworkGraph(cache){
     );
 
   const formatScore=(v,d=2)=>{const s=v!=null?Number(v):null;return s!=null&&!isNaN(s)?s.toFixed(d):'—';};
-  node.append('title').text(d=>`${d.title||d.channel_id}${d.is_recent?' ★ recently discovered':''}\n${d.category}\n${d.risk_level} | score: ${formatScore(d.relevance_score)}`);
 
   node.on('mouseover',(event,d)=>{
     NET.tooltip.html(`<strong>${esc(d.title||d.channel_id)}</strong><br>${d.username?`@${esc(d.username)}<br>`:''}Category: ${esc(d.category)}<br>Risk: ${esc(d.risk_level)}<br>Subscribers: ${d.member_count?.toLocaleString()||'N/A'}`);
@@ -2939,14 +3222,14 @@ function renderNetworkGraph(cache){
       sim.force('y', d3.forceY(d => (centers[d.category] || centers['General / Other']).y).strength(0.22));
     } else if (layoutStyle === 'risk-clustered') {
       const centers = {
-        critical:     { x: NET.width * 0.25, y: NET.height * 0.35 },
-        high:         { x: NET.width * 0.75, y: NET.height * 0.35 },
-        medium:       { x: NET.width * 0.25, y: NET.height * 0.75 },
-        low:          { x: NET.width * 0.75, y: NET.height * 0.75 },
+        high:         { x: NET.width * 0.3,  y: NET.height * 0.35 },
+        medium:       { x: NET.width * 0.7,  y: NET.height * 0.35 },
+        low:          { x: NET.width * 0.5,  y: NET.height * 0.75 },
         unclassified: { x: NET.width * 0.5,  y: NET.height * 0.5 }
       };
-      sim.force('x', d3.forceX(d => (centers[d.risk_level] || centers.unclassified).x).strength(0.22));
-      sim.force('y', d3.forceY(d => (centers[d.risk_level] || centers.unclassified).y).strength(0.22));
+      const getCtr=d=>centers[normalizeRisk(d.risk_level)]||centers.unclassified;
+      sim.force('x', d3.forceX(d => getCtr(d).x).strength(0.22));
+      sim.force('y', d3.forceY(d => getCtr(d).y).strength(0.22));
     } else {
       sim.force('center', d3.forceCenter(NET.width/2, NET.height/2));
     }
@@ -2959,7 +3242,7 @@ function renderNetworkGraph(cache){
       NET.simulation = sim.alpha(.7).alphaDecay(.02).on('tick',ticked).on('end',()=>{ saveNetworkLayoutCache(graphNodes,graphLinks); showNetLoader(false); });
     }
   }
-  restartSimulation(graphNodes,graphLinks,!!cache);
+  restartSimulation(graphNodes,graphLinks,Array.isArray(cache?.nodes) && cache.nodes.length > 0);
   showNetLoader(false);
 
   if(!NET.controlsReady){
@@ -3012,7 +3295,7 @@ function renderNetworkGraph(cache){
     body.innerHTML=`
       <div class="node-info-row"><span class="node-info-label">Title</span><span>${esc(nodeData.title||nodeData.channel_id)}</span></div>
       ${nodeData.username?`<div class="node-info-row"><span class="node-info-label">Username</span><span class="ch-name">@${esc(nodeData.username)}</span></div>`:''}
-      <div class="node-info-row"><span class="node-info-label">Risk</span><span class="risk-pill ${esc(nodeData.risk_level)}">${esc(nodeData.risk_level)}</span></div>
+      <div class="node-info-row"><span class="node-info-label">Risk</span><span class="risk-pill ${normalizeRisk(nodeData.risk_level)}">${normalizeRisk(nodeData.risk_level)}</span></div>
       <div class="node-info-row"><span class="node-info-label">Score</span><span class="mono">${formatScore(nodeData.relevance_score,3)}</span></div>
       <div class="node-info-row"><span class="node-info-label">Members</span><span class="mono">${nodeData.member_count!=null?nodeData.member_count.toLocaleString():'—'}</span></div>
       <div class="node-info-row"><span class="node-info-label">Discovered</span><span style="font-size:11px;font-family:'IBM Plex Mono',monospace">${esc(discovered)}</span></div>
@@ -3246,6 +3529,7 @@ const _cexpCanvasWrap = document.querySelector('.cexp-canvas-wrap');
 if(_cexpCanvasWrap) _cexpResizeObs.observe(_cexpCanvasWrap);
 
 /* ── UTILS ────────────────────────────────────── */
+function normalizeRisk(r){const s=(r||'').toLowerCase();return s==='critical'?'high':s;}
 function parseArr(v){
   if(!v) return[];
   if(Array.isArray(v)) return v;
@@ -3262,32 +3546,49 @@ function showNetLoader(show){
   if(!show) el.classList.add('hidden');
   else el.classList.remove('hidden');
 }
-function loadNetworkLayoutCache(){
-  if(typeof localStorage === 'undefined' || !netAPIData) return null;
+function loadNetworkCache(){
+  if(typeof localStorage === 'undefined') return null;
   try{
     const raw = localStorage.getItem(NETWORK_CACHE_KEY);
     if(!raw) return null;
     const cache = JSON.parse(raw);
     if(!cache.meta || !Array.isArray(cache.nodes)) return null;
-    if(cache.meta.node_count !== (netAPIData.nodes||[]).length) return null;
-    if(cache.meta.link_count !== (netAPIData.edges||[]).length) return null;
+    if(cache.payload){
+      if(!Array.isArray(cache.payload.nodes) || !Array.isArray(cache.payload.edges)) return null;
+      if(cache.meta.node_count !== cache.payload.nodes.length) return null;
+      if(cache.meta.link_count !== cache.payload.edges.length) return null;
+    } else {
+      if(cache.meta.node_count !== cache.nodes.length) return null;
+    }
     return cache;
   }catch{
     return null;
   }
 }
+function saveNetworkPayloadCache(data){
+  if(typeof localStorage === 'undefined') return;
+  try{
+    const raw = localStorage.getItem(NETWORK_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : { meta: {}, nodes: [] };
+    cache.payload = data;
+    cache.meta = cache.meta || {};
+    cache.meta.node_count = (data.nodes||[]).length;
+    cache.meta.link_count = (data.edges||[]).length;
+    cache.meta.payload_timestamp = Date.now();
+    localStorage.setItem(NETWORK_CACHE_KEY, JSON.stringify(cache));
+  }catch{}
+}
 function saveNetworkLayoutCache(nodes, links){
   if(typeof localStorage === 'undefined') return;
   try{
-    const payload = {
-      meta: {
-        node_count: nodes.length,
-        link_count: links.length,
-        timestamp: Date.now()
-      },
-      nodes: nodes.map(d=>({id:d.channel_id,x:d.x,y:d.y,vx:d.vx,vy:d.vy}))
-    };
-    localStorage.setItem(NETWORK_CACHE_KEY, JSON.stringify(payload));
+    const raw = localStorage.getItem(NETWORK_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : { meta: {}, payload: null };
+    cache.meta = cache.meta || {};
+    cache.meta.node_count = nodes.length;
+    cache.meta.link_count = links.length;
+    cache.meta.layout_timestamp = Date.now();
+    cache.nodes = nodes.map(d=>({id:d.channel_id,x:d.x,y:d.y,vx:d.vx,vy:d.vy}));
+    localStorage.setItem(NETWORK_CACHE_KEY, JSON.stringify(cache));
   }catch{}
 }
 function showNotifications(){
@@ -3306,7 +3607,7 @@ window.addEventListener('resize',()=>{
     netInit();
   }
 });
-document.addEventListener('DOMContentLoaded',()=>{ fetchAll(); cexpLoad(); });
+document.addEventListener('DOMContentLoaded',()=>{ initTheme(); fetchAll(); cexpLoad(); });
 
 // Also init cluster explorer and network when switching to Network tab
 const _origSwitchTab = switchTab;
