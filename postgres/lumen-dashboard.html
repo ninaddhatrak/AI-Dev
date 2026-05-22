@@ -1086,7 +1086,11 @@ body {
   padding: 14px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface);
 }
 .node-info {
-  padding: 14px; border: 1px solid var(--info-border); border-radius: var(--r-sm); background: var(--info-bg); color: var(--info-text);
+  padding: 14px; 
+  border: 1px solid var(--border); 
+  border-radius: var(--r-sm); 
+  background: var(--bg2); 
+  color: var(--text);
 }
 .node-info * { color: inherit; }
 .legend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; color: var(--text2); font-size: 12.5px; }
@@ -1102,7 +1106,7 @@ body {
 
 #ntt {
   position: absolute; top: 0; left: 0; transform: translate(12px, 12px);
-  background: rgba(14,16,28,.95); color: var(--text);
+  background: var(--surface); color: var(--text); border: 1px solid var(--border2);
   border-radius: 10px; padding: 9px 12px;
   font-family: 'IBM Plex Mono', monospace; font-size: 11px;
   pointer-events: none; opacity: 0; transition: opacity .15s ease;
@@ -1146,11 +1150,11 @@ body {
 .cexp-ch-footer { display:flex; align-items:center; gap:10px; margin-top:10px; font-size:11.5px; color:var(--muted); }
 .cexp-ch-stat { display:flex; align-items:center; gap:4px; }
 #cexpTooltip {
-  position:fixed; background:rgba(14,16,28,.97); color:var(--text);
+  position:fixed; background:var(--graph-overlay); color:var(--text);
   padding:12px 14px; border-radius:var(--r-sm); font-size:12px;
   pointer-events:none; z-index:9999; max-width:280px;
   backdrop-filter:blur(12px); border:1px solid var(--border2);
-  display:none; box-shadow:0 8px 24px rgba(0,0,0,.5);
+  display:none; box-shadow:0 8px 24px rgba(0,0,0,.15);
 }
 #cexpTooltip .cexp-tt-title { font-family:'Syne',sans-serif; font-weight:600; font-size:13px; color:var(--text); margin-bottom:3px; }
 #cexpTooltip .cexp-tt-cat { font-size:11px; color:var(--muted); margin-bottom:8px; font-family:'IBM Plex Mono',monospace; }
@@ -1744,6 +1748,7 @@ body {
             <button class="graph-btn" id="zoom-in"    title="Zoom in">＋</button>
             <button class="graph-btn" id="zoom-out"   title="Zoom out">−</button>
             <button class="graph-btn" id="zoom-reset" title="Reset view">⊡</button>
+            <button class="graph-btn" id="graph-reload" title="Reload graph" style="width: auto; padding: 0 10px;">Reload</button>
           </div>
           <svg id="net-svg" height="500">
             <defs>
@@ -3249,6 +3254,11 @@ function renderNetworkGraph(cache){
     document.getElementById('zoom-in')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.scaleBy,1.4));
     document.getElementById('zoom-out')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.scaleBy,.72));
     document.getElementById('zoom-reset')?.addEventListener('click',()=>svgEl.transition().call(NET.zoom.transform,d3.zoomIdentity));
+    document.getElementById('graph-reload')?.addEventListener('click',()=>{
+      localStorage.removeItem('lumen_network_cache');
+      NET.initialized = false;
+      netInit();
+    });
     document.getElementById('node-color-select')?.addEventListener('change', () => {
       updateLegend();
       if (NET.g) {

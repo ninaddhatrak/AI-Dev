@@ -610,6 +610,8 @@ app.get('/api/export/messages', async (req, res) => {
 // GET /api/cluster-explorer - Serve channel_clusters.json for the cluster explorer UI
 app.get('/api/cluster-explorer', (req, res) => {
   const filePath = path.join(__dirname, 'channel_clusters.json');
+  console.log('cluster-explorer: attempting to read from:', filePath);
+  console.log('cluster-explorer: __dirname:', __dirname);
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
       console.error('cluster-explorer: could not read channel_clusters.json:', err.message);
