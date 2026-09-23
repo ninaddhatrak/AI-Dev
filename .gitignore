@@ -39,6 +39,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node dependencies
+node_modules/
+
 # Pipenv
 Pipfile.lock
 
@@ -71,3 +74,4 @@ temp/
 
 # Postgres data volume (share via drive)
 postgres/pgdata/
+postgres/harm_tracker_fresh.sql
