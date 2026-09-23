@@ -1,0 +1,89 @@
+{
+  "0": {
+    "cluster_id": 0,
+    "total_posts": 1447,
+    "topic_name": "Political Ideologies & Social Critique",
+    "description": "This cluster delves into various political ideologies, with a strong focus on left-leaning perspectives such as socialism and anarchism. Posts engage in social critique, discuss historical and contemporary political theory, and highlight activism aimed at social justice and change.",
+    "key_themes": [
+      "Critique of Capitalism and Class Struggle",
+      "Anti-Fascism and Opposition to the Far-Right",
+      "Social Justice, Equity, and Rights",
+      "Political Theory and Historical Figures",
+      "Activism, Protest, and Social Change"
+    ]
+  },
+  "1": {
+    "cluster_id": 1,
+    "total_posts": 1072,
+    "topic_name": "Democratic Opposition to GOP",
+    "description": "This cluster centers on the Democratic Party's opposition to the Republican Party and Donald Trump, discussing their actions, frustrations, and criticisms of GOP policies. It highlights the broader political conflict and calls for resistance.",
+    "key_themes": [
+      "Trump & GOP Criticism",
+      "Democratic Strategy & Frustration",
+      "Political Polarization",
+      "Civil Resistance & Protest"
+    ]
+  },
+  "2": {
+    "cluster_id": 2,
+    "total_posts": 1713,
+    "topic_name": "US Political Figures & Debates",
+    "description": "This cluster centers on current contentious US political topics, featuring controversies surrounding prominent figures such as Elon Musk, RFK Jr., and AOC. It also delves into debates over government policies, legislative actions, media integrity, and issues of accountability.",
+    "key_themes": [
+      "Prominent Political & Tech Figure Controversies",
+      "US Policy & Legislative Debates",
+      "Media Scrutiny & Information Integrity",
+      "Government Ethics & Accountability"
+    ]
+  },
+  "3": {
+    "cluster_id": 3,
+    "total_posts": 1710,
+    "topic_name": "Polarized Political Discourse",
+    "description": "This cluster showcases highly charged political discussions and criticisms, primarily reflecting the divide between left-leaning (Democrats, Socialism) and right-leaning (Conservative) communities in the US. Posts express strong opinions, support for ideological positions, and often derision towards opposing political figures and viewpoints.",
+    "key_themes": [
+      "Political Polarization & Criticism",
+      "Anti-Establishment & Economic Discontent",
+      "Political Advocacy & Defiance",
+      "Emotional Responses to Politics"
+    ]
+  },
+  "4": {
+    "cluster_id": 4,
+    "total_posts": 101,
+    "topic_name": "Daily Tifa Lockhart Art",
+    "description": "This cluster is dedicated to a long-running series of daily posts featuring fan art of the Final Fantasy character Tifa Lockhart. It highlights a consistent posting ritual and dedicated appreciation for the character.",
+    "key_themes": [
+      "Tifa Lockhart Fan Art",
+      "Daily Content Series",
+      "Character Fandom",
+      "Community Posting Ritual"
+    ]
+  },
+  "5": {
+    "cluster_id": 5,
+    "total_posts": 1107,
+    "topic_name": "Geopolitics & Domestic Divisions",
+    "description": "This cluster explores the highly polarized political landscape within the United States, marked by concerns over leadership, immigration, and civil resistance. It also extensively covers significant international affairs, including global conflicts, geopolitical tensions, and the far-reaching impact of US foreign policy on allies and adversaries.",
+    "key_themes": [
+      "US Political Polarization & Leadership",
+      "International Conflicts & Geopolitics (e.g., Ukraine, NATO)",
+      "US Foreign Policy & Global Economic Impact",
+      "Authoritarianism & Ideological Extremes",
+      "Controversies Involving High-Profile Figures (e.g., Trump, Musk, Sanders, Zelenskyy)"
+    ]
+  },
+  "6": {
+    "cluster_id": 6,
+    "total_posts": 1649,
+    "topic_name": "Trump's Controversial Actions",
+    "description": "This cluster centers on critical discussions and news concerning the Trump administration's actions, policies, and perceived abuses of power. It highlights controversial staff firings, accusations of authoritarian tendencies, and various legal and ethical challenges.",
+    "key_themes": [
+      "Government Staffing & Purges",
+      "Authoritarianism & Executive Power",
+      "Controversial Policy Decisions",
+      "Legal & Ethical Scrutiny",
+      "Public & Political Criticism"
+    ]
+  }
+}

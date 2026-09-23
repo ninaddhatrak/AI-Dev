@@ -19,20 +19,7 @@ Investigative dashboard for tracking harmful Telegram channels, connected to a P
 
 ## Quick Start
 
-### 1. Prepare the database dump
-
-The dashboard uses the supplied `harm_tracker_fresh.sql` PostgreSQL dump as its
-initial dataset. The dump is local data and is intentionally ignored by Git.
-Place it in this directory before starting the stack:
-
-```text
-postgres/harm_tracker_fresh.sql
-```
-
-If you received `harm_tracker_dump (1).zip`, extract
-`harm_tracker_fresh.sql` from it into this directory.
-
-### 2. Start PostgreSQL
+### 1. Start PostgreSQL
 
 ```bash
 docker start harm-tracker-postgres
@@ -43,7 +30,7 @@ Or via docker-compose:
 docker-compose up postgres
 ```
 
-### 3. Start the API Server
+### 2. Start the API Server
 
 ```bash
 # Install dependencies
@@ -55,7 +42,7 @@ node server.js
 
 The API will start on `http://localhost:3000`.
 
-### 4. Open the Dashboard
+### 3. Open the Dashboard
 
 Open `lumen-dashboard.html` in a web browser. The dashboard will automatically fetch data from the API.
 
@@ -162,7 +149,7 @@ TGBot/
 ├── server.js             # Express API server
 ├── Dockerfile            # API container image
 ├── docker-compose.yml    # Docker orchestration
-├── harm_tracker_fresh.sql # Local PostgreSQL schema and data dump
+├── init.sql              # Database schema
 ├── lumen-dashboard.html  # Dashboard UI
 └── pgdata/               # PostgreSQL data volume
 ```
